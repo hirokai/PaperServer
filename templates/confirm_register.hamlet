@@ -1,0 +1,21 @@
+<head>
+  <link rel="stylesheet" type="text/css" href="/static/css/confirm_register.css">
+  <title> Account setup - PaperServer
+<body>
+  <h1>
+    Confirm your registration
+  <div #maindiv>
+    <p>
+      Make an account with an email address: #{email}
+    <p> By clicking OK, you agree the terms below.
+    <div #buttondiv>
+      <button #cancel onclick="location.href='@{AuthR LogoutR}';">
+        Cancel
+      <form method=post action=@{ConfirmSignUpR} enctype=#{enctype}>
+        <div style="display:none;">
+          ^{confirmRegisterFW}
+        <input #okay type=submit value="OK">
+      <div .cleardiv>
+    <div #policy>
+      #{preEscapedText policyText}
+

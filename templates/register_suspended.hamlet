@@ -1,0 +1,11 @@
+<head>
+  <link ref="stylesheet" href="/static/css/duplicated_user.css">
+<body>
+  <h1>
+    Error
+  <p>
+    Currently we don't accept new user registrations because of limited capacity of the server. Please try again later.
+  <p>
+    Go back to
+    <a href=@{AuthR LogoutR}> Top page
+    .

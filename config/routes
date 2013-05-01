@@ -1,0 +1,62 @@
+/static StaticR Static getStatic
+/auth   AuthR   Auth   getAuth
+
+/favicon.ico FaviconR GET
+/robots.txt RobotsR GET
+
+/listj PaperListWithJsonR GET
+/list PaperListR GET
+/tablet/list PaperListTabletR GET
+/list.json PaperListJsonR GET POST
+
+
+/list/alltags ListAllTagsR  GET
+
+-- ToDo: refactor names.
+/paper/add AddPaperR POST OPTIONS
+/paper/supported SupportedPaperR GET POST
+/paper/a/#PaperId PaperRa GET
+/paper/b/#PaperId PaperRb GET
+/paper/ma/#PaperId MobilePaperRa GET
+/tablet/paper/b/#PaperId PaperTabletRb GET
+/paper/raw/#PaperId RawHtmlR GET
+/paper/cit/#PaperId PaperCitationR GET
+
+/paper/refs/#PaperId    PaperRefsR GET POST
+
+/paper/epub/#PaperId EpubPaperR GET
+
+-- Modifying papers
+/paper/delete RemovePapersR POST
+/paper/reparse ReparsePapersR   POST
+/paper/single_reparse    ReparsePaperR   GET
+/paper/add_tags AddTagsR POST
+/paper/replace_tags ReplaceTagsR POST
+/paper/remove_tags RemoveTagsR POST
+
+-- /doi/a/#String/#String DoiPaperR GET
+
+/resource/#String ResourceR GET
+-- /resource ResourceListR GET
+/resource_for/#PaperId ResourceForPaperR GET
+/upload_resource UploadResourceR POST
+
+/citation.ris ExportCitationR POST
+
+/paper/info/#PaperId PaperInfoAjaxR GET
+
+/exportall    ExportAllR POST
+
+/ HomeR GET 
+
+/welcome WelcomeR GET
+
+/signup SignUpR GET
+
+/signup_confirm ConfirmSignUpR  POST
+
+/importSubmit LibraryImportSubmitR POST
+/import LibraryImportR GET
+
+/mobile/list MobilePaperListR GET
+

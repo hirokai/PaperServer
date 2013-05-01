@@ -1,0 +1,71 @@
+User json
+    email Text
+    firstName Text Maybe
+    lastName Text Maybe
+    UniqueUser email
+    deriving Eq Ord Show
+
+Reference json
+    refId Text
+    refName Text
+    cit Citation Maybe
+    citText Text Maybe
+    url Url Maybe
+    deriving Show
+
+Paper json
+    doi           Text
+    url           Url
+    originalHtml  Text
+    abstract      Text Maybe   -- Ver. 0.3 addition again
+    mainHtml      Text Maybe   -- Ver. 0.3 addition again
+    citation      Citation
+    references    [Reference]
+    figures       [Figure]
+    resources     [Resource]   --- ver. 0.0.9 added.
+    toc           Text Maybe
+    tags          [Text]
+    note          Text Maybe
+    misc          ByteString     -- Not used now.
+    parserInfo    Text Maybe    -- Ver. 0.3 addition
+    supportLevel  P.SupportLevel
+    userEmail     Text Maybe
+    deriving Show
+    
+History json
+    paper PaperId
+    action HistoryAction
+    time UTCTime
+    user User
+
+Citation json
+    doi Text Maybe
+    url Text Maybe
+    title Text Maybe
+    journal Text Maybe
+    year Int Maybe
+    volume Text Maybe
+    pageFrom Text Maybe
+    pageTo Text Maybe
+    authors [Text]
+    publisher Text Maybe
+    type Text Maybe
+    deriving Eq Show
+
+    
+Figure json
+    figId Text
+    name Text
+    annot Text
+    img Url
+    localCopy LocalCopyStatus
+    deriving Show
+
+Resource json
+    resId Text   -- Some unique ID
+    url Text
+    type Text   -- new at ver 0.4: MIME type
+    path FilePath    -- new at ver 0.4: Saved path
+    deriving Show
+
+ -- By default this file is used in Model.hs (which is imported by Foundation.hs)

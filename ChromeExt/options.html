@@ -1,0 +1,40 @@
+<html>
+  <head>
+    <script src='jquery-1.9.1.min.js'></script>
+    <script src='options.js'></script>
+    <title>PaperServer Preferences</title>
+    <style type='text/css'>
+      body{
+        padding: 20px;
+        font-family: "Helvetica Neue", Helvetica, Sans-Serif;
+      }
+      #text-host {
+        width: 250px;
+      }
+      #button-save{
+        margin: 15px 0px 0px 300px;
+        width: 100px;
+        height: 30px;
+        font-size: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id='maindiv'>
+      <h2>PaperServer plugin settings</h2>
+      <h3> Server</h3>
+      <p>Current setting: <span id='current_server'></span></p>
+      Choose from list
+      <select id='serverlist'>
+        <option value=''> </option>
+        <option value='http://paperserver.jp'> paperserver.jp </option>
+      </select>
+      <span>&nbsp;</span>
+      Or, manal input (e.g. http://localhost):
+      <input type='text' id='text-host'>
+      <br>
+      <button id='button-save'>Save</button>
+      <div id='status'></div>
+    </div>
+  </body>
+</html>

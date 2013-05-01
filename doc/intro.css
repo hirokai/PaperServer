@@ -1,0 +1,38 @@
+body {
+//  font-family: Sans-Serif;
+  //margin-top: 90px;
+ padding-top: 90px;
+  height: 100%;
+}
+
+#maindiv {
+ // padding-top: 80px;
+}
+
+h1 {
+  font-size: 30px;
+}
+
+section {
+  padding: 40px 0px 0px 0px;
+}
+
+img#schematic {
+//  max-width: 500px;
+//  max-height: 300px;
+margin-top: 40px;
+}
+
+table {
+  margin-top: 0px;
+  margin-bottom: 30px;
+}
+
+table a {
+  cursor: pointer;
+//	display: inline;
+}
+
+th#journals {
+  width: 150px;  
+}

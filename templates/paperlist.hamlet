@@ -1,0 +1,40 @@
+<head>
+   <link rel="stylesheet" type="text/css" href=#{asset BootStrapC}>
+   <link rel="stylesheet" type="text/css" href=#{asset W2UIC} />
+   <link rel="stylesheet" type="text/css" href="/static/css/paperlist.css">
+   <title> List of papers
+ <body>
+   <div .container>
+     <div .navbar .navbar-fixed-top>
+       <div .navbar-inner>
+         <a .brand href="#"> Papers
+         <ul .nav>
+           <li .active>
+             <a href="#"> List
+           <li>
+             <a #button-reader .disabled href="#" title="Read all selected papers"> Reader
+         <a href=@{AuthR LogoutR}>
+           <button #button-logout .btn .btn-small .pull-right>
+             Logout
+         <button #button-help .btn .btn-small .pull-right>
+           ?
+   <div #maindiv>
+     <div #alert-box .alert .alert-success>
+       <span #alert-place>
+     <div id="paperlist">
+   <div id="tagModal" class="modal hide" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+     <div class="modal-header">
+       <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x
+       <h3 id="myModalLabel">
+         Add tags.
+     <div class="modal-body">
+     <div class="modal-footer">
+       <button class="btn" data-dismiss="modal" aria-hidden="true">Close
+       <button class="btn btn-primary">Save changes
+   <div #hidden-forms .hidden style="display:none;">
+     ^{onetimeTokenFW}
+   <script type="text/javascript" src=#{asset JQuery}></script>
+   <script type="text/javascript" src=#{asset W2UI}></script>
+   <script type="text/javascript" src=#{asset BootStrap}></script>
+   <script src="/static/js/paperlist.js">
+

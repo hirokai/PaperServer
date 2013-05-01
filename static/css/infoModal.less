@@ -1,0 +1,33 @@
+#infoModal  {
+  position: fixed;
+  background-color: #eee;
+  width: 70%;
+  height: 100%;
+  top: 0px ! important;
+  overflow: auto;
+
+  table#info-table {
+    font-size: 14px;
+    table-layout: fixed;
+    width: 100%;
+    .col-key {
+      width: 100px;
+    }
+    .col-value {
+      width: auto;
+      overflow: scroll;
+    }
+
+    td {
+      height: 30px;
+    }
+  }
+  .modal-body {
+    max-height: 600px;
+  }
+
+  
+  .modal-tabs {
+    display: block;
+  }
+}

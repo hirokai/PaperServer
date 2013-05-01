@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html ng-app="myApp"> 
+  <head>
+    <title>My Page
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
+    <link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
+    <script src="http://code.jquery.com/jquery-1.8.2.min.js">
+    <script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js">
+    <link rel="stylesheet" href="/static/css/paperlist_tablet.css">
+    <link rel="stylesheet" href="/static/css/tablesorter.css">
+    <script src="/static/js/angular-1.0.1.min.js">
+    <title> List of papers
+  <body ng-controller="PaperListCtrl"> 
+    <div data-role="page">
+      <div data-role="header">
+        <h1> List of papers
+        <div data-role="content">	  
+          <p>Hello world		
+    <div .navbar .navbar-inverse>
+      <div class="navbar-inner">
+        <a class="brand" href="#">Paper server
+        <ul class="nav">
+          <li class="active">
+            <a href="#">Library
+          <li>
+            <a href="#">Reader
+        <span #login-show .pull-right>
+        <span #mode-show .pull-right> {{showMode()}}
+        <form class="navbar-search pull-right">
+          <input #search type="text" class="search-query span2" placeholder="Search" ng-model="query">
+    <h1>List of papers
+    <div .container>
+      ^{paperInfoModalPlaceHolder}
+      <div .modal .hide #help>
+        <div .modal-header>
+          <button type="button" .close data-dismiss="modal" aria-hidden="true">&times;
+          <h3> Help
+        <div .modal-body>
+          <p> Shortcut keys
+            <ul>
+              <li> /&nbsp;Search
+              <li> j&nbsp;Move cursor down
+              <li> k&nbsp;Move cursor up
+              <li> i&nbsp;Show paper info
+              <li> t&nbsp;Edit tags
+              <li> a&nbsp;Toggle a side bar.
+              <li> Enter&nbsp;View a paper.
+        <div .modal-footer>
+          <a href="#" class="btn" data-dismiss="modal"> Close
+      <div .row>
+        <div #sidebar-div class="span2 bs-docs-sidebar hidden">
+          <div .sidebar-nav .affix>
+            <div class="btn-group" data-toggle="buttons-radio">
+              <button #tag-and type="button" class="btn btn-mini active" ng-model="tagSelectorAND.selected"> and
+              <button #tag-or type="button" class="btn btn-mini"> or
+            <ul .taglist .nav .nav-list .bs-docs-sidenav>
+              $forall (tag,index) <- alltags
+                <li>
+                  <input type="checkbox" id="taglist-#{index}" ng-model="tag.selected" tagname="#{tag}">
+                  <label for="taglist-#{index}">#{tag}
+        <div #maindiv class="span12">
+          <div #alert-box .alert.alert-success>
+            <span #alert-place>
+              Welcome.
+            <button #alert-close type="button" class="close">x
+          <table #paperlist .table .table-striped .table-bordered .table-condensed data-role="table">
+            <colgroup>
+              <col .col-index span="1">
+              <col .col-title span="1">
+              <col .col-citation span="1">
+              <col .col-tools span="1">
+              <col .col-label span="1">
+              <col .col-date span="1">
+            <thead>
+              <tr>
+                <th>
+                  <input #check-allselected type="checkbox" ng-model="allselected">
+                  <div .btn-group>
+                    <button .btn .btn-small .dropdown-toggle data-toggle="dropdown" href="#">
+                      <i .icon-wrench>
+                      <span .caret>
+                    <ul .dropdown-menu>
+                      <li>
+                        <a #action-delete ng-click="remove()" href="#"> Delete
+                      <li>
+                        <a #action-reparse ng-click="reparse()" href="#"> Reparse
+                      <li>
+                        <a #action-refetch href="#"> Refetch images
+                      <li>
+                      <a #action-citation ng-click="citation()"> Export citation
+                <th> Title
+                <th> Citation
+                <th>
+                <th> Date added
+            <tbody>
+              $forall paper <- papers
+                ^{paperListEntryWidgetTablet paper}
+    <div #hidden-forms .hidden>
+      ^{onetimeTokenFW}
+    <script src="/static/js/paperlist.js">

@@ -1,0 +1,320 @@
+<!DOCTYPE HTML>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <title>PaperServerについて</title>
+    <link href="/static/css/lib/bootstrap-combined.min.css" rel="stylesheet">
+    <link href='/doc/intro.css' rel='stylesheet' type='text/css'>
+  </head>
+  <body>
+    <div class="navbar navbar-fixed-top">
+        <div class="navbar-inner">
+    <a class="brand" href="#"> PaperServer</a>
+    <ul class="nav">
+      <li class="active"><a href="#intro">概要</a></li>
+      <li><a href="#requirement">動作環境</a></li>
+      <li><a href="#features">機能</a></li>
+      <li><a href="#journals">対応ジャーナル</a></li>
+    </ul>
+  </div>
+</div>
+    <div id='maindiv' class='container'>
+    <section  id='intro'>
+      <h1>概要</h1>
+      <p>
+      近年のオンラインジャーナルの普及によって、科学論文の文献検索の効率は圧倒的に向上しています。一方で、大量の文献に短時間にアクセスすることが可能になったため、その管理の仕方によって、文献調査の効率も大きく変わってくると考えられます。</p>
+      <p>Mendeleyを始めとする<a href='http://en.wikipedia.org/wiki/Comparison_of_reference_management_software'>様々な</a>文献管理ソフトを使って論文のpdfを管理するというのが選択肢の一つですが、論文を読むこと自体に関しては、pdfは必ずしも効率が良いとは言えず、しばしば紙に印刷したほうが読みやすいのも事実です。なぜならpdfは印刷用に最適化されたものであるからです（<a href='http://www.usability.gr.jp/alertbox/20030714.html'>記事</a>）。</p>
+      <p>一方で、最近のウェブブラウザの急速な発展に伴い、ブラウザ上の多機能のユーザーインターフェース（UI）で読めるオンラインジャーナルも増えていますが、出版社によってUIが異なり、また動作や読み込みの軽快さが不十分、といった点で使いやすさに改善の余地があります。
+      <p>そこで、PaperServerは以下の点を特長・目標として開発されました。</p>
+      <div class="row">
+        <div class='span6'><section>
+          <h4>オンラインジャーナルのHTMLが解析され、ジャーナルの種類に関係なく統一的なUIで論文閲覧</h4>
+          ソフトウェアが論文のHTMLファイルを解析し「理解」します。それによって、統一的なUIに整形して表示することができます。無駄な装飾を省いたテキストベースの軽量データ＋ウェブブラウザの高速性を最大限に生かし、紙に印刷する以上に高速かつ快適に論文を読めるUIを目指します。また、すべてがウェブブラウザ上で完結し、プラグインをインストールするだけですぐに使えます。なお、現在は解析ロジックはオンラインジャーナルごとに手書きしていますが、将来的に機械学習的なアプローチによって自動認識することも考えられます。
+          </section>
+         
+          <section>
+          <h4>ブラウザでアクセスした論文は、自動で内容がサーバーにアップロードされ保存される</h4>
+          
+            文献探索時に「○○のような文献を以前どこかで見たような気がするが見つけられない」という状況にしばしば遭遇します。PaperServerでは、オンラインジャーナルにアクセスした時にその内容を自動で保存（サーバーに転送）するため、メモする手間なく次々と論文を探していくことができます。
+            </section>
+          </div>
+          <div class='span6'>
+                  <img id='schematic' src='/doc/img/schematic.png'> 
+            <p>PaperServerの動作の概念図。PaperServerにアップロードされた論文のデータは、個人のデータとしてプライベートな領域に置かれ、共有は決してされない。</p>
+          </div>
+          </div>
+          <section><h4> モバイルでの閲覧環境の強化</h4>
+            現時点で、携帯電話（iPhoneなど）の小さな画面上で論文を効率的に読める環境はほとんどありません。PaperServerでは、一度サーバーに送られて解析された論文は、EPUBで出力することができ、StanzaなどのEPUBリーダーを使えば、iPod touchのオフライン環境などで読むこともできます。ブラウザでの直接閲覧は近日対応予定。
+            </section>
+            <section><h4>高度な履歴検索・解析機能による論文管理の手間の削減（未対応・近日予定）</h4>
+          履歴検索・解析機能によって、いつどのようなテーマの論文を重点的に探索していたか、などといった情報を後から得ることができるようにしたい考えています。これによって、タグ付けやフォルダによる分類の手間を極力省けるようになるのが理想的です。
+
+          </section>
+          <section><h4>ソーシャル機能の排除</h4>
+          日常使うウェブサービスにソーシャル機能が入り込みすぎていて、また文献管理においては組み込みのソーシャル機能はメリットがあまりなく、むしろ集中の妨げになるというのが私の考えです。
+          </section>
+          <section> <h4>オープンソースソフトウェア</h4>
+          ソフトウェアのソースコードをオープンにすることによって、そのソフトウェアを誰もが検証でき、安全性が担保されます。また、ユーザーが大学や研究室内のサーバーで動かすこともできます（UbuntuとMac OSXで動作を確認）。サーバーのソフトウェアはGPLライセンスで、ソースコードは<a href='http://github.com/hirokai/PaperServer'>Githubで公開</a>しています。Haskellという言語で、Yesodというフレームワークを使って開発されています。また共同開発者も募集していますので、興味がある方は<a href='mailto:hkai@berkeley.edu'>作者</a>まで連絡いただければと思います。
+          </section>
+        </section>
+      <section id='features'>
+      <h1>主な機能の一覧</h1>
+      <div>
+      <h3>実装済み</h3>
+        <ul>
+        <li>オンラインジャーナルの論文を整形してウェブブラウザ内で表示。</li>
+        <li>無駄を削ぎ落したテキストベースのデータにより、高速な表示・操作が可能。</li>
+        <li>ほぼすべての操作がキーボードででき、高速な操作が可能。</li>
+        <li>対応するジャーナルのすべての論文が自動で保存される。</li>
+        <li>論文データからEPUBの作成。</li>
+        <li>文献情報エクスポート（RIS形式）。</li>
+        <li>タグ付けによる論文管理。</li>
+        <li>完全無料。オープンソースソフトウェア。</li>
+      </ul>
+      </div>
+      <div>
+        <h3>実装予定</h3>
+        以下、優先度順。
+        <ul>
+<li>対応ジャーナルの拡充。</li>
+<li>モバイル対応の表示。</li>
+<li>検索機能。</li>
+<li>論文の目次（TOC）機能。</li>
+<li>他のソフトからのライブラリのインポート</li>
+<li>論文の表示スタイルのカスタマイズ。</li>
+<li>履歴・アクティビティー検索機能。</li>
+        </ul>
+    </div>
+        </section>
+        <section id='requirement'>
+        <h1>動作環境</h1>
+        <div class='row'>
+          <table class="table zebra-striped span8 offset1">
+            
+  <thead>
+    <tr>
+       <th class="blue header"></th>
+       <th class="blue header">閲覧</th>
+       <th class="blue header">論文の追加</th>
+     </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Google Chrome</td>
+      <td>YES</td>
+      <td>自動で追加*</td>
+      </tr>
+    <tr>
+      <td>Safari (Mac OS X)</td>
+      <td>YES</td>
+      <td>サポート予定</td>
+      </tr>
+    <tr>
+      <td>Mozzila Firefox</td>
+      <td>YES</td>
+      <td>サポート予定</td>
+      </tr>
+    <tr>
+      <td>Opera</td>
+      <td>YES</td>
+      <td>&mdash;</td>
+      </tr>
+    <tr>
+      <td>Internet Explorer</td>
+      <td>YES</td>
+      <td>&mdash;</td>
+      </tr>
+    <tr>
+      <td>iPhone/iPad Safari</td>
+      <td>△</td>
+      <td>&mdash;</td>
+      </tr>
+    <tr>
+      <td>Android browser</td>
+      <td>△</td>
+      <td>&mdash;</td>
+      </tr>
+    <tr>
+      <td>i-modeブラウザ</td>
+      <td>未確認</td>
+      <td>&mdash;</td>
+      </tr>
+  </tbody>
+</table></div>
+        <div>*サーバーとの通信のために、PaperServerのサイトで配布している<a href='https://chrome.google.com/webstore/detail/paperserver/pdmapcooblalcfeoidacnahebeceeihh'>Google Chromeのプラグイン</a>のインストールが必要です。（論文の閲覧のみならプラグインは不要。）</div>
+        </section>
+        </section>
+      <section id='journals'>
+      <h1>対応ジャーナル</h1>
+      現時点では化学系と一般科学系の出版社のいくつかに対応しています。現時点では対応ジャーナル数は少ないですが、順次拡充していく予定です。
+          <table class="table zebra-striped span9 offset0">
+            
+  <thead>
+    <tr>
+       <th class="blue header span2">出版社</th>
+       <th class="blue header span4">ジャーナル</th>
+       <th class="blue header span2">完成度</th>
+       <th class="blue header span2">タイトル・要旨</th>
+       <th class="blue header span2">全文・図・引用文献</th>
+     </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan='1'>Nature publishing group</td>
+      <td rowspan='1'>
+        Nature, Nature Materials 他、 <a onclick='$("#npg-list").toggleClass("hidden")'>34 journals</a>
+        <ul class='hidden' id='npg-list'>
+          <li>Nature</li>
+          <li>Nature Biotechnology</li>
+          <li>Nature Cell Biology</li>
+          <li>Nature Chemical Biology</li>
+          <li>Nature Chemistry</li>
+          <li>Nature Climate Change</li>
+          <li>Nature Communications</li>
+          <li>Nature Genetics</li>
+          <li>Nature Geoscience</li>
+          <li>Nature Immunology</li>
+          <li>Nature Materials</li>
+          <li>Nature Medicine</li>
+          <li>Nature Methods</li>
+          <li>Nature Nanotechnology</li>
+          <li>Nature Neuroscience</li>
+          <li>Nature Photonics</li>
+          <li>Nature Physics</li>
+          <li>Nature Protocols</li>
+          <li>Nature Structural and Molecular Biology</li>
+          <li>Nature Reviews Cancer</li>
+          <li>Nature Reviews Cardiology</li>
+          <li>Nature Reviews Clinical Oncology</li>
+          <li>Nature Reviews Drug Discovery</li>
+          <li>Nature Reviews Endocrinology</li>
+          <li>Nature Reviews Gastroenterology and Hepatology</li>
+          <li>Nature Reviews Genetics</li>
+          <li>Nature Reviews Immunology</li>
+          <li>Nature Reviews Microbiology</li>
+          <li>Nature Reviews Molecular Cell Biology</li>
+          <li>Nature Reviews Nephrology</li>
+          <li>Nature Reviews Neurology</li>
+          <li>Nature Reviews Neuroscience</li>
+          <li>Nature Reviews Rheumatology</li>
+          <li>Nature Reviews Urology</li></ul>
+      </td>
+      <td>&#9733;&#9733;&#9733;&#9733;&#9734;</td>
+      <td>YES</td>
+      <td>YES</td>
+      </tr>
+
+
+    <tr>
+      <td rowspan='1'>ACS</td>
+       <td>JACS, Chem. Rev. 他、
+        <a onclick='$("#acs-list").toggleClass("hidden")'>43 journals</a>
+        <ul class='hidden' id='acs-list'>
+<li>JACS</li>
+          <li>J. Chem. Ed.</li>
+<li>ACS Appl. Mater. Interfaces</li>
+<li>ACS Chem. Biol.</li>
+<li>ACS Chem. Neurosci.</li>
+<li>ACS Comb. Sci.</li>
+<li>JOC</li>
+<li>Nano Lett.</li>
+<li>ACS Nano</li>
+<li>Org. Lett.</li>
+<li>ACS Macro Lett.  </li>
+<li>ACS Med. Chem. Lett.</li>
+<li>ACS Sustainable Chem. Eng.</li>
+<li>ACS Synth. Biol.</li>
+<li>Anal. Chem.</li>
+<li>J. Med. Chem.</li>
+<li>Langmuir</li>
+<li>Macromolecules</li>
+<li>???</li>
+<li>Chem. Mater.</li>
+<li>Chem. Rev.</li>
+<li>Biomacromolecules</li>
+<li>Bioconjugate Chem.</li>
+<li>Chem. Res. Toxicol.</li>
+<li>Acc. Chem. Res.</li>
+<li>ACS Appl. Mater. Interface</li>
+<li>ACS Catal.</li>
+<li>Biochemistry</li>
+<li>Environ. Sci. Technol.</li>
+<li>Energy Fuels</li>
+<li>Cryst. Growth Des.</li>
+<li>Ind. Eng. Chem. Res.</li>
+<li>Inorg. Chem.</li>
+<li>J. Agric. Food Chem.</li>
+<li>J. Chem. Eng. Data</li>
+<li>J. Chem. Inf. Model.</li>
+<li>J. Chem. Theory Comput.</li>
+<li>J. Phys. Chem.</li>
+<li>Mol. Pharmaceutics</li>
+<li>Org. Process Res. Dev.</li>
+<li>J. Nat. Prod.</li>
+<li>J. Phys. Chem. Lett.</li>
+<li>J. Proteome Res.</li>
+        </ul>
+      </td>
+      <td>&#9733;&#9733;&#9733;&#9733;&#9734;</td>
+      <td>YES</td>
+      <td>YES</td>
+    </tr>
+    <tr>
+      <td rowspan='1'>PLoS</td>
+      <td>PLoS ONE他、
+        <a onclick='$("#plos-list").toggleClass("hidden")'>7 journals</a>
+        <ul id='plos-list' class='hidden'>
+        <li>PLOS ONE</li>
+<li>PLOS Biology</li>
+<li>PLOS Medicine</li>
+<li>PLOS Genetics</li>
+<li>PLOS Computational Biology</li>
+<li>PLOS Pathogens</li>
+<li>PLOS Neglected Tropical Diseases</li>
+</ul>
+      </td>
+      <td>&#9733;&#9733;&#9733;&#9734;&#9734;</td>
+      <td>YES</td>
+      <td>YES</td>
+      </tr>
+    <tr>
+      <td>Wiley</td>
+      <td></td>
+      <td>&#9733;&#9733;&#9733;&#9734;&#9734;</td>
+      <td>YES</td>
+      <td>YES</td>
+      </tr>
+    <tr>
+      <td colspan='2'>PNAS</td>
+      <td>&#9733;&#9733;&#9733;&#9734;&#9734;</td>
+      <td>YES</td>
+      <td>YES</td>
+      </tr>
+<tr>
+      <td colspan='2'>Annual Reviews</td>
+      <td>&#9733;&#9733;&#9734;&#9734;&#9734;</td>
+      <td>YES</td>
+      <td>一部対応</td>
+      </tr>
+          <tr>
+      <td colspan='2'>Elsevier</td>
+      <td>&#9733;&#9734;&#9734;&#9734;&#9734;</td>
+      <td>YES</td>
+      <td>未対応</td>
+      </tr>
+        </tbody>
+</table>        </section>
+      </div>
+    </body>
+    <script src="/static/js/lib/jquery-1.9.1.min.js"></script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-40443000-1', 'paperserver.jp');
+  ga('send', 'pageview');
+
+</script>
+  </html>

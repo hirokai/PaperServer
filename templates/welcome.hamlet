@@ -1,0 +1,67 @@
+<head>
+  <title> PaperServer
+  <link rel="stylesheet" type="text/css" href="/static/css/welcome.css">
+<body>
+  <h1>Welcome to PaperServer - alpha testing version
+  <div .headline>
+    Works on Google Chrome, Firefox, and Safari
+  <div #container>
+    <div #toppanel>
+      <h3>
+        Simple and unified UI for all journals
+      <div>
+         Displays papers across from various journals in simple and unform layout. Works on a web browser. No standalone software needed.
+      <h3> Fast, smooth, and automatic
+      <div> Blazingly fast browsing by keyboard shortcuts. All full texts are automatically saved when you visit online journal articles (you can disable this if you want).
+      <h3>
+        EPUB export
+      <div>
+        Papers can be exported as portable EPUB files. You can even read papers on your iPhone!
+      <h3>
+        Library import &amp; export
+      <div>
+        You can import an existing library.
+      <div #detail-link>
+        <a href="detail">Read more...
+    <div #registered>
+      <h3>
+        Already registered?
+      <div>
+        <a href=@{AuthR LoginR}>
+          <div #btn-login>
+            Log in
+      <div>
+        <a href="/static/plugin.crx" alt="Download plugin">
+          <div #btn-download>
+            Download the plugin
+    <div #newuser>
+      <h3>
+        New user?
+      <div>
+        <a href=@{SignUpR}>
+          <div #btn-signup>
+            Sign up
+      <div #auth-explain>
+        Authentication will be done by Mozilla Persona (recommended) or Google ID.
+      <div .detail>
+        We only use your email address for the purpose of checking your identity. We never have aceess to your password. How is Mozilla Persona a better way? Read these (
+        <a href="http://techcrunch.com/2012/09/27/mozillas-persona-login-system-is-now-in-beta-takes-on-openid-and-oauth/">
+          English,
+        <a href="http://japanese.engadget.com/2012/09/27/mozilla-persona/">
+          Japanese
+        ) articles.
+  <div .footer>
+    <ul>
+      <li>
+        <a href="/doc/intro.html">
+          More info
+        (
+        <a href="/doc/ja/intro.html">
+          Japanese
+        )
+      <li>
+        <a href="http://github.com/hirokai/PaperServer">
+          Source code on Github
+      <li>
+        <a href="mailto:#{webmasterEmail}">
+          Contact the webmaster

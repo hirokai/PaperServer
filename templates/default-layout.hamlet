@@ -1,0 +1,5 @@
+$maybe msg <- mmsg
+    <a href=@{WelcomeR}>
+      Go back to the top page.
+    <div #message>#{msg}
+^{widget}

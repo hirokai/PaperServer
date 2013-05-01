@@ -1,0 +1,41 @@
+<html>
+  <head>
+    $maybe publisher <- P._citationPublisher cit
+      <meta name='dc.Publisher' content=#{publisher}>
+    $maybe url <- P._citationUrl cit
+      <meta name="original_url" content=#{url}>
+    $maybe doi <- P._citationDoi cit
+      <meta name="doi" content=#{doi}>
+    <meta name="paper_id" content=#{toPathPiece paperId}>
+
+    <link href="/static/css/format_a_mobile.css" rel="stylesheet" type="text/css">
+
+    $maybe title <- P._citationTitle cit
+      <title> #{preEscapedToHtml $ title}
+    $nothing
+      <title> Paper
+
+  <body .blacktext data-publisher=#{fromMaybe "" $ P._citationPublisher cit} data-parser=#{fromMaybe "NA" parser}>
+    <div #outerbox>
+          <div #titlediv>
+            $maybe ptype <- ctype
+              <span .articleType> #{ptype}
+            <h1> #{preEscapedToHtml $ fromMaybe "(No title)" $ P._citationTitle cit}
+            ^{citationWidget cit'}
+          $maybe abstract <- mabstract
+            <div #abstract>
+              #{preEscapedToHtml $ sanitize abstract}
+          $maybe mainHtml <- mmainHtml
+            <div #maintext>
+              #{mainHtml}
+        <div .figures #figures>
+        $forall figure <- figures
+          <div ##{P._figId figure} .fig>
+            <div>
+              <img .figimg src=#{localRes $ P._figImg figure}>
+            <div>
+              #{preEscapedToHtml $ P._figAnnot figure}
+        ^{referencesWidgetFormatB refs'}
+
+    <script src="http://code.jquery.com/jquery-1.9.1.min.js">
+

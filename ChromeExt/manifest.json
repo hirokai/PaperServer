@@ -1,0 +1,64 @@
+{
+  "manifest_version": 2,
+  "name": "PaperServer",
+  "version": "0.2.1",
+  "description": "Manage and organize journal articles.",
+  "icons": { "128": "icon_128.png", "48": "icon_48.png" },
+  "background": {
+    "page": "background.html"
+  },
+  "options_page": "options.html",
+  "content_security_policy": "script-src 'self'; object-src 'self'",
+  "content_scripts": [
+    {
+      "matches": [
+         "http://pubs.acs.org/doi/*",
+         "http://www.annualreviews.org/doi/*",
+         "http://www.nature.com/*",
+         "http://www.sciencedirect.com/*",
+         "http://www.sciencemag.org/content/*",
+         "http://stke.sciencemag.org/cgi/content/*",
+         "http://www.plosone.org/*",
+         "http://www.plosbiology.org/*",
+         "http://www.plosmedicine.org/*",
+         "http://www.plosgenetics.org/*",
+         "http://www.plospathogens.org/*",
+         "http://www.plosntds.org/*",
+         "http://www.ploscompbiol.org/*",
+         "http://onlinelibrary.wiley.com/doi/*",
+         "http://www.pnas.org/*",
+         "http://*.rupress.org/*",
+         "http://www.jimmunol.org/*"
+       ],
+			      "run_at": "document_start",
+      "js": ["jquery-1.9.1.min.js", "common.js"]
+    }
+  ],
+  "permissions": ["tabs","notifications",
+    "http://paperserver.jp/*",
+    "http://localhost/*",
+         "http://pubs.acs.org/doi/*",
+         "http://www.annualreviews.org/doi/*",
+         "http://www.nature.com/*",
+         "http://www.sciencedirect.com/*",
+         "http://www.sciencemag.org/content/*",
+         "http://stke.sciencemag.org/cgi/content/*",
+         "http://www.plosone.org/*",
+         "http://www.plosbiology.org/*",
+         "http://www.plosmedicine.org/*",
+         "http://www.plosgenetics.org/*",
+         "http://www.plospathogens.org/*",
+         "http://www.plosntds.org/*",
+         "http://www.ploscompbiol.org/*",
+         "http://onlinelibrary.wiley.com/doi/*",
+         "http://www.pnas.org/*",
+         "http://*.rupress.org/*",
+         "http://www.jimmunol.org/*" 
+    ],
+ "page_action": {
+   "default_icon": "default.png",
+   "default_title": "Paper server"
+ }
+}
+
+

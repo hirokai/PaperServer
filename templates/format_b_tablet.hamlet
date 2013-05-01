@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="http://code.jquery.com/jquery-1.8.2.min.js">
+    <script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js">
+    <link rel="stylesheet" href="/static/css/paperlist_tablet.css">
+    <link rel="stylesheet" href="/static/css/tablesorter.css">
+    <script src="/static/js/angular-1.0.1.min.js">
+    <title> List of papers
+    $maybe publisher <- citationPublisher cit
+      <meta name='dc.Publisher' content=#{publisher}>
+    $maybe url <- citationUrl cit
+      <meta name="original_url" content=#{url}>
+    $maybe doi <- citationDoi cit
+      <meta name="doi" content=#{doi}>
+    <meta name="paper_id" content=#{toPathPiece paperId}>
+    $maybe n <- nextPaper
+     <meta name="next_id" content=#{toPathPiece n}>
+    $maybe p <- prevPaper
+     <meta name="prev_id" content=#{toPathPiece p}>
+
+    <link href="/static/css/format_b_tablet.css" rel="stylesheet" type="text/css">
+
+    $maybe title <- citationTitle cit
+      <title> #{title}
+    $nothing
+      <title> Paper
+  <body .blacktext>
+      <div .navbar .navbar-inverse>
+        <div class="navbar-inner">
+          <a class="brand" href="#">Paper server</a>
+          <ul class="nav">
+            <li><a href="/list">Library</a></li>
+            <li class="active"><a href="#">Reader</a></li>
+            <li><a href="#"></a></li>
+          <span .navbar-text #headerCitation>
+              <i> #{fromMaybe "" $ citationJournal cit},
+              <b> #{fromMaybe "" $ citationVolume cit},
+              #{fromMaybe "" $ citationPageFrom cit} &dash;
+              #{fromMaybe "" $ citationPageTo cit}
+          <span class="btn-group">
+            <button #button-info .btn-small class="btn">Info
+            <button #button-toc .btn-small class="btn">TOC
+            $maybe url <- citationUrl cit
+              <button #button-original .btn-small class="btn">
+                <a href=#{url}> Original
+            <button #button-reparse .btn-small class="btn">Reparse
+          <form class="navbar-search pull-right">
+            <input type="text" class="search-query" placeholder="Search">
+    <header>
+      <div #topbox>
+        <div .right>
+          <a .button #textwhite> T
+          <a .button #textblack> T
+          <span> &nbsp;
+          <a .button #showfig href="" onclick="showFigBox(true);return false;"> References
+
+    <div #outerbox>
+      <div #leftbox data-spy="scroll" data-target='#navbar'>
+        <div #leftinner>
+          <div #titlediv>
+            $maybe ptype <- citationType cit
+              <span .articleType> #{ptype}
+            <h1> #{preEscapedText $ fromMaybe "(No title)" $ citationTitle cit}
+            ^{citationWidget cit}
+          <div #abstract> #{preEscapedText $ sanitize $ fromMaybe "" mabstract}
+          <div #maintext> #{preEscapedText $ sanitize mainHtml}
+      <div #rightbox>
+        <div .figures #figures>
+        $forall figure <- figures
+          <div ##{figureFigId figure} .fig>
+            <div>
+              <img .figimg src=#{localRes $ figureImg figure}>
+            <div>
+              #{preEscapedText $ figureAnnot figure}
+        ^{referencesWidgetFormatB refs}
+
+    <div class="modal figures" id="figModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="display:none;">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+        <h3 id="myModalLabel"> Paper figures
+        <div class="pagination">
+          <ul>
+            <li>
+              <a href="#"> Prev
+            $forall figure <-figures
+              <li>
+                <a href="#"> #{figureName figure}
+            <li>
+              <a href="#"> Next
+      <div class="modal-body">
+        $forall figure <- figures
+          <div .boxfig #box-#{figureFigId figure}>
+            <div>
+              <img .figimg src=#{localRes $ figureImg figure}>
+            <div>
+              #{preEscapedText $ figureAnnot figure}
+      <div class="modal-footer">
+        <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Close</button>
+    ^{paperInfoModalWithData paper}
+
+    <script src="/static/js/format-b-tablet-ui.js">

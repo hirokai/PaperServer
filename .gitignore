@@ -1,0 +1,41 @@
+*.swp
+*/*.swo
+*/*/*.swp
+dist/*
+dist/**
+dist/**/*
+dist/*/*/*
+.DS_Store
+cache/*
+library/*
+temp
+static/tmp/*
+yesod-devel/
+data/
+incoming/
+
+#	121027compile.txt
+
+ChromeExt.pem
+# Parser/batchtest.sh
+Parser/parser.log
+#	msgpack_test.rb
+#	nginx_access.log
+#	nginx_error.log
+
+static/css/bootstrap-responsive.min.css
+static/css/bootstrap/bootstrap.css
+static/css/bootstrap/tests/*
+
+static/css/confirm_register.css
+static/css/duplicated_user.css
+static/css/format_b.css
+static/css/paperlist.css
+static/css/paperlist2.css
+static/css/welcome.css
+
+static/js/.idea/
+static/js/paperlist.js
+static/js/paperlist2.js
+#	takediff.sh
+#	xsstest.html

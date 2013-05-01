@@ -1,0 +1,18 @@
+<head>
+  <link ref="stylesheet" href="/static/css/duplicated_user.css">
+<body>
+  <h1>
+    Error
+  <p>
+    You are already registered as
+    <span #email>
+      #{email}
+    . You can just use your Mozilla Persona or Google ID to log in.
+  <ul>
+    <li>
+      Go to your
+      <a href=@{PaperListR}>
+        Library, or
+    <li>
+      <a href=@{AuthR LogoutR}>Log out
+      and sign up for another account.

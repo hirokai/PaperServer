@@ -1,0 +1,91 @@
+<div class="modal" id="infoModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="display:none;">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+    <h3 id="myModalLabel"> Paper info
+    <ul .nav .nav-tabs>
+      <li .active>
+        <a #info-a-cit href="#" data-toggle="tab">Citation
+      <li>
+        <a #info-a-refs href="#" data-toggle="tab">References
+      <li>
+        <a #info-a-history href="#" data-toggle="tab">History
+      <li>
+        <a #info-a-details href="#" data-toggle="tab">Misc
+  <div class="modal-body">
+    <div #info-div-cit .modal-tabs>
+        <div>
+          <a #button-citation .btn .btn-small href=@{PaperCitationR paperId}>
+            Export citation
+        <table .table #info-table>
+          <colgroup>
+            <col .col-key>
+            <col .col-value>
+          <tbody>
+            <tr>
+              <td>URL
+              <td>
+                <span #info-url>
+                  #{paperUrl paper}
+            <tr>
+              <td>DOI
+              <td>
+                <span #info-doi>
+                  #{paperDoi paper}
+            <tr>
+              <td>Journal
+              <td>
+                <span #info-journal>
+                  #{fromMaybe "N/A" $ citationJournal cit}
+            <tr>
+              <td>Volume
+              <td>
+                <span #info-volume>
+                  #{fromMaybe "N/A" $ citationVolume cit}
+            <tr>
+              <td>Pages
+              <td>
+                <span #info-pages>
+                  #{pages}
+            <tr>
+              <td>Year
+              <td>
+                <span #info-year>
+                  #{maybe "N/A" show $ citationYear cit}
+            <tr>
+              <td>Title
+              <td>
+                <span #info-title>
+                  #{fromMaybe "N/A" $ citationTitle cit}
+            <tr>
+              <td>Authors
+              <td>
+                <span #info-authors>
+                  #{ authors }
+    <div #info-div-refs .modal-tabs>
+      <ul>
+        $forall ref <- refs
+          <li>#{referenceRefName ref} : #{fromMaybe "" $ referenceCitText ref}
+    <div #info-div-history .modal-tabs>
+      Coming soon...
+    <div #info-div-details .modal-tabs>
+      <div>
+        <button #button-reparse .btn-small .btn>
+          Reparse
+        <h4>
+          Figures
+        <dl #detail-figs>
+          $forall fig <- paperFigures paper
+            <dt> #{figureName fig}
+              <dd> #{figureImg fig}
+        <h4>
+          Other resources
+        <ul #detail-res>
+          $forall res <- paperResources paper
+            <li>
+              <span> #{resourceUrl res}
+    <div #info-div-history>
+        
+  <div class="modal-footer">
+    <button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>
+    <button class="btn btn-primary">OK</button>
+

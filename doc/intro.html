@@ -1,0 +1,317 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>PaperServer</title>
+    <link href="/static/css/lib/bootstrap-combined.min.css" rel="stylesheet">
+    <link href='/doc/intro.css' rel='stylesheet' type='text/css'>
+  </head>
+  <body>
+    <div class="navbar navbar-fixed-top">
+        <div class="navbar-inner">
+    <a class="brand" href="#"> PaperServer</a>
+    <ul class="nav">
+      <li class="active"><a href="#intro">About</a></li>
+      <li><a href="#requirement">Requirement</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#journals">Journals covered</a></li>
+    </ul>
+  </div>
+</div>
+    <div id='maindiv' class='container'>
+    <section  id='intro'>
+      <h1>About</h1>
+      <p>
+      Recent progress in IT in the field of scientific publication allowed us to access vast amount of papers in a short amount of time. Yet, the efficiency in literature search can still be improved by using IT even more effectively to manage all those papers.
+      </p>
+
+      <p>There are <a href='http://en.wikipedia.org/wiki/Comparison_of_reference_management_software'>many</a> literature management softwares, but most of them rely on managing pdf files of papers. PDF is not necessarily great platform for reading papers on the computer screen (read <a href='http://www.nngroup.com/articles/pdf-unfit-for-human-consumption/'>this</a>).</p>
+      <p>Recently, more and more online journals try to implement rich browser UI on their websites and try to make the navigation in the paper easier. However, those UIs are often too rich and slow. Also, you need to operate differently for different publishers.</p>
+      <p>PaperServer was developed to solve all those problems.</p>
+      <div class="row">
+        <div class='span6'><section>
+          <h4>Unified UI for all online journals by the analysis of HTML</h4>
+          PaperServer analyzes and &quot;understands&quot; the HTML file of an online journal paper. This makes it possible to layout the paper into a uniform UI. Not too much decoration, and fast browsing by keyboard shortcuts. Everything is done in a web browser, and you can use all features just by installing a browser plugin (currenly only <a href='https://chrome.google.com/webstore/detail/paperserver/pdmapcooblalcfeoidacnahebeceeihh'>Google Chrome plugin</a>).
+          </section>
+         
+          <section>
+          <h4>All papers you read are uploaded from the web browser to PaperServer automatically</h4>
+              You no longer have to keep a memo of your literature search.
+            </section>
+          </div>
+          <div class='span6'>
+                  <img id='schematic' src='/doc/img/schematic.png'> 
+            <p>This schematic shows how PaperServer works. All data uploaded to PaperServer are kept private, and never get shared.</p>
+          </div>
+          </div>
+          <section><h4>Better mobile browsing</h4>
+            Virtually no way exists for efficiently and comfortably read a paper on the screen of mobile environment so far. PaperServer can generate EPUB from the analyzed paper data. You can read a generated EPUB by a mobile EPUB reader such as Stanza.
+            </section>
+            <section><h4>Advanced history search and analysis of the library (not implemented, and planned)</h4>
+          This will make your &quot;manual&quot; management of papers (such as tagging, organizing into folders) unnecessary.
+
+          </section>
+          <section><h4>No SNS feature</h4>
+          I think SNS feature is not useful in this kind of software, and that may be even distracting.
+          </section>
+          <section> <h4>Free, open source software</h4>
+          By making the source code of a software open to everyone, anyone can inspect the software and this improves security and validness of the software. You may also run PaperServer on your own server in your lab.（It was tested on Mac OS X 10.8 and Ubuntu 12.04）。The entire source code is distribtued at <a href='http://github.com/hirokai/PaperServer'>Github</a> under GPL license. It was developed in Haskell with Yesod web server framework. I also look for a collaborator, and <a href='mailto:hkai@berkeley.edu'>email me</a> if you are interested.
+          </section>
+        </section>
+      <section id='features'>
+      <h1>Major features</h1>
+      <div>
+      <h3>Already implemented</h3>
+        <ul>
+        <li>Browsing papers in a web browser with a unified layout and UI.</li>
+        <li>Simplified, text-based data makes the loading of the page faster than the original online journal websites.</li>
+        <li>You can do most operations by keyboard shortcuts.</li>
+        <li>All papers are saved automatically.</li>
+        <li>EPUB generation from the paper data.</li>
+        <li>Citation export in RIS.</li>
+        <li>Tagging of papers</li>
+        <li>Free. Open source software.</li>
+      </ul>
+      </div>
+      <div>
+        <h3>Planned</h3>
+        In the order of priority:
+        <ul>
+<li>Cover more journals.</li>
+<li>Support mobile browsing environment.</li>
+<li>Advanced search features.</li>
+<li>Table of contents.</li>
+<li>Library import from other softwares.</li>
+<li>Customized UI.</li>
+<li>Advanced search of history and activities.</li>
+        </ul>
+    </div>
+        </section>
+        <section id='requirement'>
+        <h1>System Requirement</h1>
+        <div class='row'>
+          <table class="table zebra-striped span8 offset1">
+            
+  <thead>
+    <tr>
+       <th class="blue header"></th>
+       <th class="blue header">Reading</th>
+       <th class="blue header">Adding a paper</th>
+     </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Google Chrome</td>
+      <td>YES</td>
+      <td>Automatic*</td>
+      </tr>
+    <tr>
+      <td>Safari (Mac OS X)</td>
+      <td>YES</td>
+      <td>Planned</td>
+      </tr>
+    <tr>
+      <td>Mozzila Firefox</td>
+      <td>YES</td>
+      <td>Planned</td>
+      </tr>
+    <tr>
+      <td>Opera</td>
+      <td>YES</td>
+      <td>&mdash;</td>
+      </tr>
+    <tr>
+      <td>Internet Explorer</td>
+      <td>YES</td>
+      <td>&mdash;</td>
+      </tr>
+    <tr>
+      <td>iPhone/iPad Safari</td>
+      <td>planned</td>
+      <td>&mdash;</td>
+      </tr>
+    <tr>
+      <td>Android browser</td>
+      <td>planned</td>
+      <td>&mdash;</td>
+      </tr>
+
+  </tbody>
+</table></div>
+        <div>*To communicate with paperserver.jp, you need to install <a href='https://chrome.google.com/webstore/detail/paperserver/pdmapcooblalcfeoidacnahebeceeihh'>Google Chrome plugin</a>.</div>
+        </section>
+        </section>
+      <section id='journals'>
+      <h1>Covered journals</h1>
+      Currenly some chemistry and general science journals are covered. This list will be expanded sometime soon.
+          <table class="table zebra-striped span9 offset0">
+            
+  <thead>
+    <tr>
+       <th class="blue header span2">Publisher</th>
+       <th class="blue header span4">Journal</th>
+       <th class="blue header span2">Quality of formatting</th>
+       <th class="blue header span2">Citation &amp; abstract</th>
+       <th class="blue header span2">Full text, figures, and references</th>
+     </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan='1'>Nature publishing group</td>
+      <td rowspan='1'>
+        Nature, Nature Materials, <a onclick='$("#npg-list").toggleClass("hidden")'>34 journals</a> in total
+        <ul class='hidden' id='npg-list'>
+          <li>Nature</li>
+          <li>Nature Biotechnology</li>
+          <li>Nature Cell Biology</li>
+          <li>Nature Chemical Biology</li>
+          <li>Nature Chemistry</li>
+          <li>Nature Climate Change</li>
+          <li>Nature Communications</li>
+          <li>Nature Genetics</li>
+          <li>Nature Geoscience</li>
+          <li>Nature Immunology</li>
+          <li>Nature Materials</li>
+          <li>Nature Medicine</li>
+          <li>Nature Methods</li>
+          <li>Nature Nanotechnology</li>
+          <li>Nature Neuroscience</li>
+          <li>Nature Photonics</li>
+          <li>Nature Physics</li>
+          <li>Nature Protocols</li>
+          <li>Nature Structural and Molecular Biology</li>
+          <li>Nature Reviews Cancer</li>
+          <li>Nature Reviews Cardiology</li>
+          <li>Nature Reviews Clinical Oncology</li>
+          <li>Nature Reviews Drug Discovery</li>
+          <li>Nature Reviews Endocrinology</li>
+          <li>Nature Reviews Gastroenterology and Hepatology</li>
+          <li>Nature Reviews Genetics</li>
+          <li>Nature Reviews Immunology</li>
+          <li>Nature Reviews Microbiology</li>
+          <li>Nature Reviews Molecular Cell Biology</li>
+          <li>Nature Reviews Nephrology</li>
+          <li>Nature Reviews Neurology</li>
+          <li>Nature Reviews Neuroscience</li>
+          <li>Nature Reviews Rheumatology</li>
+          <li>Nature Reviews Urology</li></ul>
+      </td>
+      <td>&#9733;&#9733;&#9733;&#9733;&#9734;</td>
+      <td>YES</td>
+      <td>YES</td>
+      </tr>
+
+
+    <tr>
+      <td rowspan='1'>ACS</td>
+       <td>JACS, Chem. Rev., 
+        <a onclick='$("#acs-list").toggleClass("hidden")'>43 journals</a> in total
+        <ul class='hidden' id='acs-list'>
+<li>JACS</li>
+          <li>J. Chem. Ed.</li>
+<li>ACS Appl. Mater. Interfaces</li>
+<li>ACS Chem. Biol.</li>
+<li>ACS Chem. Neurosci.</li>
+<li>ACS Comb. Sci.</li>
+<li>JOC</li>
+<li>Nano Lett.</li>
+<li>ACS Nano</li>
+<li>Org. Lett.</li>
+<li>ACS Macro Lett.  </li>
+<li>ACS Med. Chem. Lett.</li>
+<li>ACS Sustainable Chem. Eng.</li>
+<li>ACS Synth. Biol.</li>
+<li>Anal. Chem.</li>
+<li>J. Med. Chem.</li>
+<li>Langmuir</li>
+<li>Macromolecules</li>
+<li>???</li>
+<li>Chem. Mater.</li>
+<li>Chem. Rev.</li>
+<li>Biomacromolecules</li>
+<li>Bioconjugate Chem.</li>
+<li>Chem. Res. Toxicol.</li>
+<li>Acc. Chem. Res.</li>
+<li>ACS Appl. Mater. Interface</li>
+<li>ACS Catal.</li>
+<li>Biochemistry</li>
+<li>Environ. Sci. Technol.</li>
+<li>Energy Fuels</li>
+<li>Cryst. Growth Des.</li>
+<li>Ind. Eng. Chem. Res.</li>
+<li>Inorg. Chem.</li>
+<li>J. Agric. Food Chem.</li>
+<li>J. Chem. Eng. Data</li>
+<li>J. Chem. Inf. Model.</li>
+<li>J. Chem. Theory Comput.</li>
+<li>J. Phys. Chem.</li>
+<li>Mol. Pharmaceutics</li>
+<li>Org. Process Res. Dev.</li>
+<li>J. Nat. Prod.</li>
+<li>J. Phys. Chem. Lett.</li>
+<li>J. Proteome Res.</li>
+        </ul>
+      </td>
+      <td>&#9733;&#9733;&#9733;&#9733;&#9734;</td>
+      <td>YES</td>
+      <td>YES</td>
+    </tr>
+    <tr>
+      <td rowspan='1'>PLoS</td>
+      <td>PLoS ONE, 
+        <a onclick='$("#plos-list").toggleClass("hidden")'>7 journals</a> in total
+        <ul id='plos-list' class='hidden'>
+        <li>PLOS ONE</li>
+<li>PLOS Biology</li>
+<li>PLOS Medicine</li>
+<li>PLOS Genetics</li>
+<li>PLOS Computational Biology</li>
+<li>PLOS Pathogens</li>
+<li>PLOS Neglected Tropical Diseases</li>
+</ul>
+      </td>
+      <td>&#9733;&#9733;&#9733;&#9734;&#9734;</td>
+      <td>YES</td>
+      <td>YES</td>
+      </tr>
+    <tr>
+      <td>Wiley</td>
+      <td></td>
+      <td>&#9733;&#9733;&#9733;&#9734;&#9734;</td>
+      <td>YES</td>
+      <td>YES</td>
+      </tr>
+    <tr>
+      <td colspan='2'>PNAS</td>
+      <td>&#9733;&#9733;&#9733;&#9734;&#9734;</td>
+      <td>YES</td>
+      <td>YES</td>
+      </tr>
+<tr>
+      <td colspan='2'>Annual Reviews</td>
+      <td>&#9733;&#9733;&#9734;&#9734;&#9734;</td>
+      <td>YES</td>
+      <td>partial</td>
+      </tr>
+          <tr>
+      <td colspan='2'>Elsevier</td>
+      <td>&#9733;&#9734;&#9734;&#9734;&#9734;</td>
+      <td>YES</td>
+      <td>&mdash;</td>
+      </tr>
+        </tbody>
+</table>        </section>
+      </div>
+    </body>
+    <script src="/static/js/lib/jquery-1.9.1.min.js"></script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-40443000-1', 'paperserver.jp');
+  ga('send', 'pageview');
+
+</script>
+  </html>

@@ -1,0 +1,49 @@
+ <div #outer-all>
+    <div #info-div-cit>
+        <table .table #info-table>
+          <colgroup>
+            <col .col-key>
+            <col .col-value>
+          <tbody>
+            <tr>
+              <td>DOI
+              <td>
+                <span #info-doi>
+                  #{paperDoi paper}
+            <tr>
+              <td>Journal
+              <td>
+                <span #info-journal>
+                  #{fromMaybe "N/A" $ citationJournal cit}
+            <tr>
+              <td>Volume
+              <td>
+                <span #info-volume>
+                  #{fromMaybe "N/A" $ citationVolume cit}
+            <tr>
+              <td>Pages
+              <td>
+                <span #info-pages>
+                  #{pages}
+            <tr>
+              <td>Year
+              <td>
+                <span #info-year>
+                  #{maybe "N/A" show $ citationYear cit}
+            <tr>
+              <td>Title
+              <td>
+                <span #info-title>
+                  #{fromMaybe "N/A" $ citationTitle cit}
+            <tr>
+              <td>Authors
+              <td>
+                <span #info-authors>
+                  #{ authors }
+    <div #info-div-refs>
+      <ul>
+        $forall ref <- refs
+          <li>#{referenceRefName ref} : #{fromMaybe "" $ referenceCitText ref}
+    <div #info-div-figs>
+
+

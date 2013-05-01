@@ -1,0 +1,12 @@
+<link rel="stylesheet" href="/static/css/paperlist.css">
+<h1> List of Resources
+<table>
+  <tr>
+    <th> Url
+    <th> Hash (file name)
+  $forall Entity resourceId r <- res
+    <tr>
+      <td>
+        #{resourceUrl r}
+      <td>
+        #{resourceResId r}

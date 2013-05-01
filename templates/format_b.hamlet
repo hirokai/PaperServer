@@ -1,0 +1,106 @@
+<html>
+  <head>
+    $maybe publisher <- P._citationPublisher cit
+      <meta name='dc.Publisher' content=#{publisher}>
+    $maybe url <- P._citationUrl cit
+      <meta name="original_url" content=#{url}>
+    $maybe doi <- P._citationDoi cit
+      <meta name="doi" content=#{doi}>
+    <meta name="paper_id" content=#{toPathPiece paperId}>
+
+    <link href=#{asset BootStrapC} rel="stylesheet" type="text/css">
+    <link href="/static/css/format_b.css" rel="stylesheet" type="text/css">
+
+    $maybe title <- P._citationTitle cit
+      <title> #{preEscapedToHtml $ title}
+    $nothing
+      <title> Paper
+
+  <body .blacktext data-publisher=#{fromMaybe "" $ P._citationPublisher cit} data-parser=#{fromMaybe "NA" parser}>
+      <div .navbar .navbar-fixed-top>
+        <div .navbar-inner>
+          <a .brand" href="#">Papers
+          <ul .nav">
+            <li>
+              <a href="/list">List
+            <li .active>
+              <a href="#">Reader
+            <li>
+              <a href="#">
+          <span .navbar-text #headerCitation>
+            #{citHtml cit}
+          <span .btn-group>
+            <button #button-info .btn-small .btn title="Paper info">
+              <i .icon-info-sign>
+               
+            <button #button-toc .btn-small .btn .disabled title="Table of contents">
+              <i .icon-th-list>
+               
+            <button #button-figs .btn-small .btn title="List of figures">
+              <i .icon-picture>
+               
+          <span .btn-group data-toggle="buttons-radio">
+            <button #button-formatted .btn-small .btn .active>
+              Formatted
+            <button #button-original .btn-small .btn title "">
+              Original
+          <a href=@{EpubPaperR paperId} title="Download EPUB">
+            <button #button-epub .btn-small .btn>
+              <i .icon-book> 
+              
+          <a href=@{AuthR LogoutR}>
+            <button #button-logout .btn .btn-small .pull-right>
+              Logout
+          <button #button-help .btn .btn-small .pull-right>
+              ?
+    <div #outerbox>
+      <div #leftbox data-spy="scroll" data-target="#navbar">
+        <div #leftinner>
+          <div #titlediv>
+            $maybe ptype <- ctype
+              <span .articleType> #{ptype}
+            <h1> #{preEscapedToHtml $ fromMaybe "(No title)" $ P._citationTitle cit}
+            ^{citationWidget cit'}
+          $maybe abstract <- mabstract
+            <div #abstract>
+              #{preEscapedToHtml $ sanitize abstract}
+          $maybe mainHtml <- mmainHtml
+            <div #maintext>
+              #{mainHtml}
+      <div #rightbox>
+        <div .figures #figures>
+        $forall figure <- figures
+          <div ##{P._figId figure} .fig>
+            <div>
+              <img .figimg src=#{localRes $ P._figImg figure}>
+            <div>
+              #{preEscapedToHtml $ P._figAnnot figure}
+        ^{referencesWidgetFormatB refs'}
+
+    <div .modal .figures #figModal tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="display:none;top:0px;">
+      <div .modal-header>
+        <button type="button" .close data-dismiss="modal" aria-hidden="true">x
+        <h3 #myModalLabel> Paper figures
+        <div .pagination .pagination-small>
+          <ul>
+            <li>
+              <a href="#" data-fig-prev>&laquo;
+            $forall figure <-figures
+              <li>
+                <a href="#" data-figID=#{P._figId figure}> #{P._figName figure}
+            <li>
+              <a href="#" data-fig-next>&raquo;
+      <div .modal-body>
+        $forall figure <- figures
+          <div .boxfig #box-#{P._figId figure}>
+            <div .fig-img-box>
+              <img .figimg src=#{localRes $ P._figImg figure}>
+            <span .fig-caption>
+              #{preEscapedToHtml $ P._figAnnot figure}
+      <div .modal-footer>
+        <button .btn .btn-primary data-dismiss="modal" aria-hidden="true">Close
+    ^{paperInfoModalWithData paperId paper}
+
+    <script src=#{asset JQuery}>
+    <script src=#{asset BootStrap}>
+    <script src="/static/js/format-b-ui.js">

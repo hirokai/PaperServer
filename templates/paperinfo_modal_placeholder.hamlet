@@ -1,0 +1,57 @@
+<div class="modal" id="infoModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="display:none;">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+    <h3 id="myModalLabel"> Paper info
+    <ul .nav .nav-tabs>
+      <li .active>
+        <a #info-a-cit href="#" data-toggle="tab">Citation
+      <li>
+        <a #info-a-refs href="#" data-toggle="tab">References
+      <li>
+        <a #info-a-figs href="#" data-toggle="tab">Figures
+  <div #infoModalBody class="modal-body">
+    <div #info-div-cit>
+      <table .table #info-table>
+        <colgroup>
+          <col .col-key>
+          <col .col-value>
+        <tbody>
+          <tr>
+            <td>DOI
+            <td>
+              <span #info-doi>
+          <tr>
+            <td>Journal
+            <td>
+              <span #info-journal>
+          <tr>
+            <td>Volume
+            <td>
+              <span #info-volume>
+          <tr>
+            <td>Pages
+            <td>
+              <span #info-pages>
+          <tr>
+            <td>Year
+            <td>
+              <span #info-year>
+          <tr>
+            <td>Title
+            <td>
+              <span #info-title>
+          <tr>
+            <td>Authors
+            <td>
+              <span #info-authors>
+          <tr>
+            <td> JSON data
+            <td>
+              <span #info-json>
+    <div #info-div-refs>
+    <div #info-div-figs>
+
+  <div class="modal-footer">
+    <button class="btn" data-dismiss="modal" aria-hidden="true">Cancel
+    <button class="btn btn-primary">OK
+

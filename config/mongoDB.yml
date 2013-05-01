@@ -1,0 +1,24 @@
+Default: &defaults
+  user: PaperServer
+  password: nopassword
+  host: localhost
+  database: PaperServer
+  connections: 10
+
+Development:
+  <<: *defaults
+
+Testing:
+  database: Yesod_test
+  <<: *defaults
+
+Staging:
+  database: Yesod_staging
+  connections: 100
+  <<: *defaults
+
+Production:
+  database: PaperServer
+  connections: 100
+  host: localhost
+  <<: *defaults

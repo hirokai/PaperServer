@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/paperlist_with_json.css">
+    <script src="/static/js/angular-1.0.1.min.js">
+    <title> List of papers
+  <body>
+    <div .navbar .navbar-inverse>
+      <div class="navbar-inner">
+        <a class="brand" href="#">Paper server
+        <ul class="nav">
+          <li class="active">
+            <a href="#">Library
+          <li>
+            <a href="#">Reader
+        <span #login-show .pull-right>
+        <span #mode-show .pull-right> {{showMode()}}
+        <form class="navbar-search pull-right">
+          <input #search type="text" class="search-query span2" placeholder="Search" ng-model="query">
+    <h1>List of papers
+    <div .container>
+      ^{paperInfoModalPlaceHolder}
+      <div .row>
+        <div #sidebar-div class="span2 bs-docs-sidebar">
+          <div .sidebar-nav .affix>
+            <div class="btn-group" data-toggle="buttons-radio">
+              <button #tag-and type="button" class="btn btn-mini active" ng-model="tagSelectorAND.selected"> and
+              <button #tag-or type="button" class="btn btn-mini"> or
+            <ul .taglist .nav .nav-list .bs-docs-sidenav>
+              <li ng-repeat="tag in alltags">
+                <input type="checkbox" id="taglist-{{$index}}" ng-model="tag.selected" tagname="{{tag.name}}">
+                <label for="taglist-{{$index}}">{{tag.name}}
+        <div #maindiv class="span10">
+          <div #alert-box .alert.alert-success>
+            <span #alert-place>
+              Welcome.
+            <button #alert-close type="button" class="close">x
+          <table #paperlist .table .table-striped .table-bordered .table-condensed>
+            <colgroup>
+              <col .col-index span="1">
+              <col .col-title span="1">
+              <col .col-citation span="1">
+              <col .col-tools span="1">
+              <col .col-label span="1">
+            <thead>
+              <tr>
+                <th>
+                  <input #check-allselected type="checkbox" ng-model="allselected">
+                  <div .btn-group>
+                    <button .btn .btn-small .dropdown-toggle data-toggle="dropdown" href="#">
+                      <i .icon-wrench>
+                      <span .caret>
+                    <ul .dropdown-menu>
+                      <li>
+                        <a #action-delete ng-click="remove()" href="#"> Delete
+                      <li>
+                        <a #action-reparse ng-click="reparse()" href="#"> Reparse
+                      <li>
+                        <a #action-refetch href="#"> Refetch images
+                      <li>
+                        <a #action-citation ng-click="citation()"> Export citation
+                <th> Title
+                <th> Citation
+                <th>
+                <th>Tags
+            <tbody>
+              $forall paper <- papers
+                ^{paperListEntryWidget paper}
+
+    <script src="/static/js/jquery-1.7.2.min.js">
+    <script src="/static/js/paperlist_json_controller.js">
+    <script src="/static/js/paperlist-json-ui.js">
+    <script src="/static/js/bootstrap.min.js">
+
+
+<script src="/static/js/bootstrap.min.js">
