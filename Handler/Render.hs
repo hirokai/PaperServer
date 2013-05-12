@@ -4,8 +4,8 @@ module Handler.Render where
 
 import Import
 
-import Data.Maybe
-import Control.Monad
+-- import Data.Maybe
+-- import Control.Monad
 import Control.Lens
 
 import Text.Blaze.Html.Renderer.Text
@@ -17,12 +17,13 @@ import Text.HTML.SanitizeXSS (sanitize)
 
 import Yesod.Auth
 
-import Import
+-- import Import
 
 import System.Directory (doesFileExist,removeFile)
 
 import qualified Parser.Paper as P
-import Model
+-- import Model
+import Model.PaperMongo
 import Model.PaperP
 
 import Handler.Utils
@@ -34,13 +35,15 @@ data RenderFormat = FormatA | FormatB |
                     FormatAMobile | FormatBMobile
       deriving (Show,Eq,Enum,Bounded)
 
+
+
 -- Render paper.
-renderPaper :: PaperId -> RenderFormat -> Handler RepHtml
+renderPaper :: PaperId -> RenderFormat -> Handler TypedContent
 renderPaper paperId format = do
-  email <- requireAuthId
-  res <- runDB $ selectListUser email [PaperId ==. paperId] [LimitTo 1]
+  email <- requireAuthId'
+  res <-  getPaperDB email paperId
   case res of
-    [Entity pid paper] -> do  -- ToDo: Take only pid to avoid DB overhead.
+    Just paper -> do  -- ToDo: Take only pid to avoid DB overhead.
       let path = renderedCachePath format paperId
       exist <- liftIO $ doesFileExist path
       if exist then
@@ -48,8 +51,8 @@ renderPaper paperId format = do
       else do
         let pp = paperToPaperP paper
         saveFormattedCache format paperId pp
-        sendFile typeHtml path   -- Stub: assuming formatB
-    _ ->
+        sendFile typeHtml path
+    Nothing ->
       notFound
 
 saveFormattedCache :: RenderFormat -> PaperId -> PaperP -> Handler ()
@@ -71,6 +74,7 @@ saveFormattedCache format paperId pp = do
           case format of
             FormatA -> $(widgetFile "format_a")
             FormatB -> $(widgetFile "format_b")
+            FormatAMobile -> $(widgetFile "format_a_mobile")
             _ -> $(widgetFile "format_b")
 
   liftIO $ TLIO.writeFile (renderedCachePath format paperId) (renderHtml (body (\_ _ -> "")))

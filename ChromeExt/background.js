@@ -1,5 +1,9 @@
 //background.js
 
+var path_addurl = '/paper/add_url';
+
+chrome.tabs.onUpdated.addListener(function(tabId, info, tab){
+});
 
 chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
   var details = new Object();

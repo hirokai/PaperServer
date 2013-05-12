@@ -8,43 +8,44 @@
 module Model.PaperP where
 
 import Import hiding (Citation, Reference,Resource,Figure)
-import qualified Model
-import Data.Text (Text)
-import Data.ByteString (ByteString)
+-- import qualified Model
+-- import Model.Defs
+-- import Data.Text (Text)
+-- import Data.ByteString (ByteString)
 
-import Data.Maybe
-import Control.Applicative
+-- import Data.Maybe
+-- import Control.Applicative
 
 import Data.Tree
-import Data.Aeson
-import Data.Aeson.TH
+-- import Data.Aeson
+-- import Data.Aeson.TH
 
-import Text.Blaze
+-- import Text.Blaze
 import qualified Text.Blaze.XHtml5 as H hiding (map)
-import qualified Text.Blaze.XHtml5.Attributes as A
-import Text.Blaze.Renderer.Utf8
+-- import qualified Text.Blaze.XHtml5.Attributes as A
+-- import Text.Blaze.Renderer.Utf8
 
 import qualified Parser.Paper as P  -- So P.Paper means Paper from the parser.
 
 import Model
-import Model.PaperReaderTypes
+-- import Model.PaperReaderTypes
 
-import Data.Maybe
-import Data.Text (Text)
+-- import Data.Maybe
+-- import Data.Text (Text)
 import qualified Data.Text as T
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as B
-import Data.Char (toLower)
+-- import Data.ByteString (ByteString)
+-- import qualified Data.ByteString as B
+-- import Data.Char (toLower)
 
-import Data.Maybe
-import Control.Applicative
-import Data.Tree
+-- import Data.Maybe
+-- import Control.Applicative
+-- import Data.Tree
 
-import Data.Aeson
-import Data.Aeson.TH
+-- import Data.Aeson
+-- import Data.Aeson.TH
 
-import Text.XML.Cursor
-import Text.XML.Selector (maybeText)
+-- import Text.XML.Cursor
+-- import Text.XML.Selector (maybeText)
 
 type PaperP = P.Paper
 
@@ -69,11 +70,14 @@ paperPToPaper (P.Paper doi url html abs mainh c ref fig res toc tags note misc s
     misc
     parser
     support
+    avail
     Nothing
+    defaultTime
   where
+    avail = ResourceAvailability True (isJust abs) (isJust mainh) (not $ null fig) (not $ null ref) (isJust toc)
     f (P.Citation a b c d e f g h i j k) = Citation a b c d e f g h i j k
     g (P.Reference a b c d e) = Reference a b (fmap f c) d e
-    h (P.Figure a b c d) = Figure a b c d Model.Unknown
+    h (P.Figure a b c d) = Figure a b c d Unknown
     i (P.Resource rid rurl rtype) = Resource rid rurl rtype rpath
       where
         rpath = imageCachePath url
@@ -82,7 +86,7 @@ paperPToPaper (P.Paper doi url html abs mainh c ref fig res toc tags note misc s
 -- For IO version with reparsing from HTML cache, see paperToPaperPIO in Model.PaperReader
 -- section info is also missing in Paper for now (because it takes some time to implement tree marshalling)
 paperToPaperP :: Paper -> P.Paper
-paperToPaperP  (Paper doi url html abs mainh c ref fig res toc tags note misc parser support email) =
+paperToPaperP  (Paper doi url html abs mainh c ref fig res toc tags note misc parser support avail email time) =
   P.Paper
     doi url
     html abs (fmap P.FlatHtml mainh)

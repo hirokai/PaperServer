@@ -1,0 +1,6 @@
+<body>
+  <div #maindiv>
+    You are not registered. Please
+    <a href=@{SignUpR}>
+      sign up
+    first.

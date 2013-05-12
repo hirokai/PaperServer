@@ -9,42 +9,49 @@ module Handler.PaperListW2UI where
 
 import Import
 
-import Yesod.Auth -- (requireAuthId)
+-- import Yesod.Auth -- (requireAuthId)
 
-import System.FilePath
-import System.Random
+-- import System.FilePath
+-- import System.Random
 
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as BL
+-- import qualified Data.ByteString as B
+-- import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
+-- import qualified Data.Text.IO as TIO
 import Safe
 
 import Handler.Utils
-import Handler.Widget
-import Handler.Form
+-- import Handler.Widget
+-- import Handler.Form
 import Model.PaperReader
+import Model.PaperMongo
+-- import Model.Defs
 
-import Data.Aeson hiding (object)
+-- import Data.Aeson hiding (object)
 
-import Data.Maybe
-import Control.Applicative
-import Control.Monad
-import Data.List (sortBy,nub)
+-- import Data.List (foldl1)
+-- import Data.Maybe
+-- import Control.Applicative
+-- import Control.Monad
+-- import Data.List (sortBy,nub)
 
-import Database.MongoDB((=:))
-import Database.MongoDB (Document, Action, findOne)
-import qualified Database.MongoDB as MongoDB
-import Database.Persist.MongoDB
+import Database.MongoDB ((=:))
+import qualified Database.MongoDB as DB
+-- import qualified Database.MongoDB.Query as DB
 
-getPaperListJsonR :: Handler RepJson
+import Data.Bson ((!?))
+import qualified Data.Bson as Bson
+
+import Data.Time
+
+getPaperListJsonR :: Handler TypedContent
 getPaperListJsonR = sendGridJson Nothing
 
 
 -- This returns JSON for w2ui library.
 -- ToDo: parse the arguments correctly.
 postPaperListJsonR = do
-  email <- requireAuthId
+  email <- requireAuthId'
   body <- runRequestBody
   -- liftIO $ print $ fst body
   -- rreq <- parseJsonBody
@@ -72,7 +79,6 @@ myparseJson = do
   rt <- lookupPostParam "search[0][type]"
   ro <- lookupPostParam "search[0][operator]"
   rv <- lookupPostParam "search[0][value]"
-  sd <- lookupPostParam "sort[0][direction]"
   sf <- lookupPostParam "sort[0][field]"
   sd <- lookupPostParam "sort[0][direction]"
   -- field": "fname", "dataType": "text", "value": "vit", "operator": "is" },
@@ -93,11 +99,70 @@ summaryFromDB email = do
 -}
 data PaperSummary = PaperSummary {
   pTitle :: Text,
-  pCitText :: Text,
+  pCit :: Citation,
   pId :: Text,
   pDoi :: Text,
-  pTags :: [Text]
-}
+  pTags :: [Text],
+  pAvail :: ResourceAvailability,
+  pAddedDate :: UTCTime
+} deriving (Show,Eq)
+
+instance ToJSON PaperSummary where
+  toJSON (PaperSummary title cit pid doi tags avail date)
+    = object ["citation" .= cit,"tags" .= tags]  -- Stub!!
+
+mkPSVals (PaperSummary t c i d tags avail date) =
+  let
+    --Stub!!
+  in
+  ["citation" .= c
+   , "cittext" .= mkCitHtml c 
+   , "available" .= avail
+   , "tags" .= tags
+   , "id" .= i
+   , "date" .= date]  -- Stub!!
+
+fromBson :: Bson.Document -> Maybe PaperSummary
+fromBson doc =
+  let
+    fromObjId :: Bson.ObjectId -> Text
+    fromObjId oid = T.pack $ show oid
+    mcit =
+      let
+        d = doc !? "citation.doi"
+        u = doc !? "citation.url"
+        t = doc !? "citation.title"
+        j = doc !? "citation.journal"
+        y = doc !? "citation.year"
+        v = doc !? "citation.volume"
+        pf = doc !? "citation.pageFrom"
+        pt = doc !? "citation.pageTo"
+        as = fromMaybe [] $ doc !? "citation.authors"
+        pub = doc !? "citation.publisher"
+        typ = doc !? "citation.type"
+      in
+        Just $ Citation d u t j y v pf pt as pub typ 
+    mavail = do
+      txt <- doc !? "available"
+      return $ f (T.splitOn "," txt)
+        where
+          f ts = ResourceAvailability
+                   ("cit" `elem` ts) 
+                   ("abs" `elem` ts) 
+                   ("full" `elem` ts) 
+                   ("fig" `elem` ts) 
+                   ("ref" `elem` ts) 
+                   ("toc" `elem` ts)
+    mdate = doc !? "time_added"
+  in
+  PaperSummary
+    <$> doc !? "citation.title"
+    <*> mcit
+    <*> fmap fromObjId (doc !? "_id")
+    <*> doc !? "doi"
+    <*> doc !? "tags"
+    <*> mavail
+    <*> mdate
 
 -- ToDo: Make this clearer.
 -- Fcuntions from Persistent modules may be incompetent for my purpose.
@@ -105,102 +170,36 @@ data PaperSummary = PaperSummary {
 -- https://github.com/yesodweb/yesod/wiki/Rawmongo
 -- http://hackage.haskell.org/packages/archive/mongoDB/0.4.2/doc/html/Database-MongoDB.html
 -- Using the parsed request, return JSON.
-sendGridJson :: Maybe W2UIGridReq -> Handler RepJson
+sendGridJson :: Maybe W2UIGridReq -> Handler TypedContent
 sendGridJson mreq = do
-  email <- requireAuthId
-  liftIO $ print mreq
-  let num = maybe 50 limit mreq
-  let search = maybe [] mkSearch mreq
-  let cond = [LimitTo num] ++ maybe [] mkFilter mreq
-  res_all <- runDB $ selectListUser email [] []
-  -- res <- runDB $ selectListUser email search cond
-  res_filtered <- filterM (maybe (const (return True)) myFilter mreq) res_all
-  sort_key <- case mreq of
-                Nothing -> return $ map (T.pack . show) [1..]  -- No sort.
-                Just req -> mapM (mySortKey req) res_filtered
-                -- ToDo: support both asc and desc
-  let res_sorted' = map snd $ sortBy (\a b -> compare (fst a) (fst b)) (zip sort_key res_filtered)
-  let res_sorted = case mreq of
-                     Just (W2UIGridReq _ _ _ _ (W2UISort _ "desc":_)) -> reverse res_sorted'
-                     _ -> res_sorted'
-  let off = maybe 0 offset mreq
-  summ <- mapM summaryEx' $ drop off res_sorted 
+  email <- requireAuthId'
+  total <- countMatching email (mkSearch mreq)
+  sumsb <- queryRawMongo $ summariesFilter email (mkSearch mreq . mkFilter mreq)
+  let sums = catMaybes $ map fromBson sumsb
+  let per_page = maybe 50 limit mreq
+  let off = maybe 0 offset mreq 
   let
     addRecId :: Int -> [(Text,Value)] -> Value
     addRecId n ps = object (["recid" .= n] ++ ps)
     json = object [
-                "total" .= (length res_sorted)
-                , "page" .= (off `div` num)  --Stub: 20 should be customized.
-                , "records" .= take num (zipWith addRecId [off+1..] summ)
+                "total" .= total
+                , "page" .= (off `div` per_page)  --Stub: 20 should be customizable.
+                , "records" .= (zipWith addRecId [off+1..] $ map mkPSVals sums)
                 ]
-  jsonToRepJson json
+  return $ toTypedContent json
 
+{-
+addDate :: Text -> PaperSummary -> Handler PaperSummary
+addDate email (PaperSummary t c pid d tags avail date)  = do
+  mh <- case fromPathPiece pid of
+          Just t -> paperAddedDate email t
+          Nothing -> return Nothing
+  return $ PaperSummary t c pid d tags avail (maybe date (T.pack . show . historyTime) mh)
 
--- You need to further filter the results manually,
--- because selectList does not seem able to search title, citation, date, etc.
--- Seems that currenly there is no filter usable.
-
---This is for Yesod.Persistent
-mkSearch (W2UIGridReq _ _ _ search _) = catMaybes $ map mk search
-  where
-    mk (W2UISearch a b c d) = Nothing
-
--- This is for "manual" (or app side) filtering.
--- ToDo: This currently assumes "and" for multiple conditions.
--- myparseJson gets only the first one now.
-myFilter :: W2UIGridReq -> Entity Paper -> Handler Bool
-myFilter (W2UIGridReq a b c search e) ent@(Entity pid p) = do
-  case search of
-    [] -> return True
-    (W2UISearch "tags" _ "is" tagtxt:preds) -> do
-      if tagtxt == "" then
-        myFilter (W2UIGridReq a b c preds e) ent
-      else do
-        let st = T.splitOn "\n" tagtxt
-        let pt = paperTags p
-        if all (\t -> t `elem` pt) st then
-          myFilter (W2UIGridReq a b c preds e) ent
-        else
-          return False
-
-mySortKey :: W2UIGridReq -> Entity Paper -> Handler Text
-mySortKey (W2UIGridReq _ _ _ _ sorts) ent@(Entity pid p) = do
-  let res = case sorts of
-              [] -> ""
-              (W2UISort "id" dir:_) ->
-                toPathPiece pid
-              (W2UISort "title" dir:_) ->
-                fromMaybe "" $ citationTitle (paperCitation p)
-              (W2UISort "cittxt" dir:_) ->
-                mkCitText (paperCitation p)
-              (W2UISort "abstract_available" dir:_) ->
-                if isJust (paperAbstract p) then "B" else "A"
-              (W2UISort "fulltext_available" dir:_) ->
-                if isJust (paperMainHtml p) then "B" else "A"
-              (W2UISort "refs_available" dir:_) ->
-                if not $ null (paperReferences p) then "B" else "A"
-              (W2UISort "figs_available" dir:_) ->
-                if not $ null (paperFigures p) then "B" else "A"
-              -- (W2UISort "tags" dir:_) ->
-              --  "" -- not implemented yet
-              (W2UISort "type" dir:_) ->
-                fromMaybe "" $ citationType $ paperCitation p
-              _ -> ""
-  return res
+-}
 
 
 -- http://w2ui.com/web/docs/grid
--- getFilter :: (PersistEntity val, PersistQuery m, PersistEntityBackend val ~ PersistMonadBackend m) => W2UIGridReq -> [Filter val]
--- Stub! ToDo: Make search and sort possible.
-mkFilter (W2UIGridReq limit offset logic search sorts) =
-  let
-    s = maybe [] (\(W2UISort field direction) -> [(f direction) (g field)]) (headMay sorts)
-    f "ASC" = Asc
-    f "DESC" = Desc
-    f _ = Asc
-    g _ = PaperDoi   --Stub: No way to sort by paper title, etc in Persist.
-  in
-    [OffsetBy offset] ++ [] -- Stub!!
 
 
 -- This returns JSON for w2ui library.
@@ -211,14 +210,15 @@ summaryEx' (Entity pid p) = summaryEx pid p
 
 summaryEx :: PaperId -> Paper -> Handler [(Text, Value)]
 summaryEx pid p = do
-  let base = paperSummary pid p
-  abs <- liftIO $ resourceReady p RAbs
-  full <- liftIO $ resourceReady p RFull
   let
+    base = paperSummary pid p
+    abs = isJust $ paperAbstract p
+    full = isJust $ paperMainHtml p
     fig = not . null $ paperFigures p
     ref = not . null $ paperReferences p
+    added = paperTimeAdded p
   let obj = object ["abstract".= abs, "fulltext" .= full, "figures" .= fig, "references" .= ref]
-  return $ base ++ ["available" .= obj]
+  return $ base ++ ["available" .= obj, "date" .= added]
 
 data W2UISearch = W2UISearch Text Text Text Text deriving Show
 data W2UISort = W2UISort Text Text deriving Show -- stub!!
@@ -232,21 +232,62 @@ data W2UIGridReq = W2UIGridReq {
   , sorts :: [W2UISort]
 } deriving Show
 
-{-
-instance FromJSON W2UIGridReq where
-  parseJSON (Object v) =
-    W2UIGridReq <$> (v .: "limit") <*> (v .: "offset") <*> pure "" -- (v .: "search-logic")
-                <*> pure [(W2UISearch "" "" "" "")] -- (v .: "search")
-                <*> pure [(W2UISort "" "")] -- (v .: "sort")
+mkSearch :: Maybe W2UIGridReq -> DB.Query -> DB.Query
+mkSearch Nothing = id
+mkSearch (Just (W2UIGridReq _ _ _ search _)) = foldl (.) id $ catMaybes $ map mk search
+  where
+    mk (W2UISearch f b c v) =
+      let
+        vr = ["$regex" =: v]
+        fields = map (\s -> [s =: vr]) ["citation.title","abstract","main_html","citation.journal"]
+      in
+        case (f,v) of
+          ("tags","") -> Nothing
+          ("tags",_) -> Just $ addSelect ["tags" =: ["$all" =: (T.splitOn "\n" v)]]
+          (_,_) ->
+            Just $ addSelect ["$or" =: fields]
 
-instance FromJSON W2UISearch where
-  parseJSON (Object v) =
-    return $ W2UISearch "" "" "" ""
-    --W2UISearch <$> (v .: "field") <*> (v .: "dataType") <*> (v .: "value") <*> (v .: "operator")
+addSelect filt q = q{DB.selection=DB.Select (DB.selector (DB.selection q)++filt) "paper"}
 
-instance FromJSON W2UISort where
-  parseJSON (Object v) =
-    return $ W2UISort "" "" 
-  --  W2UISort <$> (v .: "field") <*> (v .: "direction")
+-- http://hackage.haskell.org/packages/archive/mongoDB/1.3.1/doc/html/Database-MongoDB-Query.html
 
--}
+-- This is for filtering and sorting MongoDB query.
+-- ToDo: This currently assumes "and" for multiple conditions.
+-- myparseJson gets only the first one now.
+mkFilter :: Maybe W2UIGridReq -> DB.Query -> DB.Query
+mkFilter Nothing = id
+mkFilter (Just (W2UIGridReq limN offset c search sorts))
+  = filtering . sorting
+  where
+    d :: Text -> Int
+    d "asc" = 1 
+    d "desc" = -1 
+    d _ = 0
+    filtering, sorting :: DB.Query -> DB.Query
+    filtering q =
+      q{DB.limit=(fromIntegral limN),DB.skip=(fromIntegral offset)}  -- Stub!! Add keyword search
+    sorting q =
+      case sorts of
+        [] -> q
+        (W2UISort "id" dir:_) ->
+          q{DB.sort = ["_id" =: d dir]}
+        (W2UISort "citation.title" dir:_) ->
+          q{DB.sort = ["citation.title" =: d dir]}
+        (W2UISort "cittext" dir:_) ->
+          q{DB.sort = ["citation.journal" =: d dir]}   -- Stub!!
+        (W2UISort "available.abstract" dir:_) ->
+          q{DB.sort = ["abstract" =: d dir]}   -- Stub!! This sorts also based on the content of abstract, which is wrong.
+        (W2UISort "available.fulltext" dir:_) ->
+          q{DB.sort = ["support_level" =: d dir]}   -- Stub!! 
+        (W2UISort "available.references" dir:_) ->
+          q{DB.sort = ["support_level" =: d dir]}   -- Stub!! 
+        (W2UISort "available.figures" dir:_) ->
+          q{DB.sort = ["support_level" =: d dir]}   -- Stub!! 
+        -- (W2UISort "tags" dir:_) ->
+        --  "" -- not implemented yet
+        (W2UISort "date" dir:_) ->
+          q{DB.sort = ["time_added" =: d dir]}
+        (W2UISort "citation.type" dir:_) ->
+          q{DB.sort = ["citation.type" =: d dir]}
+        _ -> q{DB.sort = ["time_added" =: (-1::Int)]}
+

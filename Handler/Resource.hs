@@ -8,37 +8,37 @@ module Handler.Resource (
 where
 
 import Import
-import Data.Text (Text)
+-- import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
-import qualified Data.Text.Lazy.IO as TLIO
+-- import qualified Data.Text.IO as TIO
+-- import qualified Data.Text.Lazy.IO as TLIO
 import Data.List hiding (insert)
-import Handler.Utils(localRes)
+-- import Handler.Utils(localRes)
 import System.Directory (doesFileExist)
-import Data.Aeson as Ae hiding (object)
-import Safe
+-- import Data.Aeson as Ae hiding (object)
+-- import Safe
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64 as B64
-import Data.String
+-- import Data.String
 import Data.Text.Encoding
-import Control.Monad
-import Control.Lens hiding ((.=))
+-- import Control.Monad
+-- import Control.Lens hiding ((.=))
 
-import Yesod.Auth (Route(LogoutR))
-import Model.PaperP
-import qualified Parser.Paper as P
-import Text.Hamlet
-import Text.Blaze.Html
-import Text.Blaze.Html.Renderer.Text
-import Handler.Widget
-import Data.Maybe
-import Text.HTML.SanitizeXSS (sanitize)
-import Handler.Home
+-- import Yesod.Auth (Route(LogoutR))
+-- import Model.PaperP
+-- import qualified Parser.Paper as P
+-- import Text.Hamlet
+-- import Text.Blaze.Html
+-- import Text.Blaze.Html.Renderer.Text
+-- import Handler.Widget
+-- import Data.Maybe
+-- import Text.HTML.SanitizeXSS (sanitize)
+-- import Handler.Home
 
 
 -- Returns the resource list for the specified paper.
 -- Client will download the image files (if not yet) and send them to server.
-getResourceForPaperR :: PaperId -> Handler RepJson
+getResourceForPaperR :: PaperId -> Handler TypedContent
 getResourceForPaperR pid = do
   paper <- runDB $ get404 pid
   let title = citationTitle $ paperCitation paper
@@ -50,7 +50,7 @@ getResourceForPaperR pid = do
               new_urls <- liftIO $ filterM (fmap not . resourceExists) urls
               $(logInfo) $ T.pack $ show $ Data.List.length new_urls
               return $ object ["success" .= True, "url" .= new_urls]
-  jsonToRepJson $ toJSON obj
+  return $ toTypedContent $ toJSON obj
 
 resourceExists :: Url -> IO Bool
 resourceExists url = doesFileExist (resourceRootFolder ++ mkFileName (T.unpack url))
@@ -71,7 +71,7 @@ getResourceR hash = do
 
 -- ToDo: we need a mechanism to avoid overwriting by wrong data by unknown users,
 -- probably by separating users.
-postUploadResourceR :: Handler RepJson
+postUploadResourceR :: Handler TypedContent
 postUploadResourceR = do
   mtpid <- lookupPostParam "id"
   let mpid = case mtpid of
@@ -85,7 +85,7 @@ postUploadResourceR = do
            (Just pid, Just ftype, Just url, Just dat) ->
              saveUploadedImg pid ftype url dat
            _ -> return $ object ["success" .= False, "message" .= ("Params missing."::String)]
-  jsonToRepJson $ toJSON obj
+  return $ toTypedContent $ toJSON obj
 
 saveUploadedImg :: PaperId -> Text -> Text -> Text -> Handler Value
 saveUploadedImg pid ftype url dat = do

@@ -1,20 +1,20 @@
 {-# LANGUAGE ScopedTypeVariables, OverloadedStrings #-}
-module Formatter (
+module Parser.Formatter (
   format
   , Format (..)
 ) where
 
-import Parser.PaperReader
-import System.Environment (getArgs)
+-- import Parser.PaperReader
+-- import System.Environment (getArgs)
 import Data.List
-import Data.Maybe (isJust)
+-- import Data.Maybe (isJust)
 import Control.Monad
-import Control.Applicative
-import Import hiding (Url,toHtml)
+-- import Control.Applicative
+import Parser.Import hiding (Url,toHtml)
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy as LB
-import qualified Data.Text.IO as TIO
-import Data.Aeson.Encode
+-- import qualified Data.Text.IO as TIO
+-- import Data.Aeson.Encode
 
 import Text.Blaze.Html5 hiding (map)
 import qualified Text.Blaze.Html5 as H
@@ -22,11 +22,12 @@ import Text.Blaze.Html5.Attributes as A
 import Text.Blaze.Html.Renderer.Text
 import Data.Text.Lazy.Encoding (encodeUtf8)
 
-import Settings
+-- import Settings
 import Control.Lens
 import Data.Tree
 
 data Format = FormatA | FormatB deriving (Eq,Show,Ord)
+
 
 format :: Format -> Paper -> LB.ByteString
 format FormatA paper = encodeUtf8 $ renderHtml $ formatA paper
@@ -43,6 +44,7 @@ formatA paper = docTypeHtml $ do
   H.body $ do
     preEscapedToHtml $ maybe "" showMainText $ paper^.paperMainHtml
 
+cssBasePath,jsBasePath :: String
 cssBasePath = "http://localhost:3000/static/css/"
 jsBasePath = "http://localhost:3000/static/js/"
 
@@ -53,8 +55,10 @@ cssPathsB = map (cssBasePath ++) ["format_b.css","bootstrap.min.css"]
 commonJS :: [String]
 commonJS = ["http://code.jquery.com/jquery-1.9.1.min.js",
               jsBasePath++"bootstrap.min.js"]
+jsPathsB :: [String]
 jsPathsB = commonJS ++ map (jsBasePath ++) ["format-b-ui.js"]
 
+putCss :: forall a. ToValue a => a -> Html
 putCss url = link ! rel "stylesheet" ! type_ "text/css" ! href (toValue url)
 putJS :: String -> Markup
 putJS url = H.script ! src (toValue url) $ H.toHtml (""::String)

@@ -12,30 +12,30 @@ module Parser.PaperReader (
   , readersFromHtmlDoc
 ) where
 
-import Import
-import Data.List
-import Data.Maybe
-import qualified Data.Map as M
-import Safe
+import Parser.Import
+-- import Data.List
+-- import Data.Maybe
+-- import qualified Data.Map as M
+-- import Safe
 import Control.Applicative
-import Control.Monad (mzero)
+-- import Control.Monad (mzero)
 import Control.Lens hiding ((.=))
 
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
+-- import qualified Data.Text.IO as TIO
 import Data.Text.Lazy (fromStrict)
 import Data.Text.Lazy.Encoding (encodeUtf8)
 
 import qualified Text.HTML.DOM as H
 import Text.XML.Cursor
 import Text.XML (Document)
-import Text.XML.Selector (maybeText)
+-- import Text.XML.Selector (maybeText)
 
 import Data.Tree
 import Text.HTML.SanitizeXSS
 
-import Data.Aeson
+-- import Data.Aeson
 
 import Parser.Publisher.ACS
 import Parser.Publisher.NatureL
@@ -52,7 +52,7 @@ import Parser.Publisher.PNAS
 import Parser.Publisher.AnnualRev
 import Parser.Publisher.Rockfeller
 
-import System.IO
+-- import System.IO
 
 
 -- import qualified Data.ByteString.Base64 as B64 (encode)
@@ -97,6 +97,7 @@ sanitizePaper p =
     paperAbstract %~ (fmap sanitize) $
     paperMainHtml %~ (fmap sanitizeMainHtml) $ p
 
+sanitizeMainHtml :: PaperMainText -> PaperMainText
 sanitizeMainHtml (FlatHtml html) = FlatHtml (sanitize html)
 sanitizeMainHtml (Structured n) = Structured $ sanitizeNode n
   where

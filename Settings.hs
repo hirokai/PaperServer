@@ -3,6 +3,32 @@
 -- In addition, you can configure a number of different aspects of Yesod
 -- by overriding methods in the Yesod typeclass. That instance is
 -- declared in the Foundation.hs file.
+
+{-
+import Prelude
+import Text.Shakespeare.Text (st)
+import Language.Haskell.TH.Syntax
+import Database.Persist.MongoDB (MongoConf)
+import Yesod.Default.Config
+import Yesod.Default.Util
+import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Yaml
+import Control.Applicative
+import Settings.Development
+import Data.Default (def)
+import Text.Hamlet
+
+import Yesod.Dispatch (toPathPiece)
+import Model (PaperId)
+
+-}
+
+-- | Settings are centralized, as much as possible, into this file. This
+-- includes database connection settings, static file locations, etc.
+-- In addition, you can configure a number of different aspects of Yesod
+-- by overriding methods in the Yesod typeclass. That instance is
+-- declared in the Foundation.hs file.
 module Settings where
 
 import Prelude
@@ -12,24 +38,22 @@ import Database.Persist.MongoDB (MongoConf)
 import Yesod.Default.Config
 import Yesod.Default.Util
 import Data.Text (Text)
-import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
 import Data.Yaml
 import Control.Applicative
 import Settings.Development
 import Data.Default (def)
 import Text.Hamlet
+
 import Data.Digest.Pure.SHA (sha256,showDigest)
-import Data.ByteString.Char8 (pack)
+import qualified Data.Text as T
 import qualified Data.ByteString.Lazy as BL
-
-import Yesod.Dispatch (toPathPiece)
-import Model (PaperId)
-
 import Data.FileEmbed
+import Data.Text.Encoding (decodeUtf8)
+import qualified Data.ByteString.Char8 as BC
+
 
 -- | Which Persistent backend this site is using.
-type PersistConfig = MongoConf
+type PersistConf = MongoConf
 
 -- Static setting below. Changing these requires a recompile
 
@@ -96,6 +120,11 @@ webmasterEmail = (T.unpack . T.strip . decodeUtf8) $(embedFile "config/webmaster
 analyticsCode = (T.unpack . T.strip . decodeUtf8) $(embedFile "config/analytics_code")
 
 
+epubTemplateFolder :: String
+epubSourceFolder :: String
+htmlFolder :: String
+imageCachePath :: Text -> String
+
 epubTemplateFolder = appRootFolder ++ "temp/epub_template/"
 epubSourceFolder = appRootFolder ++ "temp/epub_source/"
 
@@ -109,7 +138,7 @@ imageCachePath url = appRootFolder ++ "data/image/" ++ (mkFileName $ T.unpack ur
 
 -- |Make a file name from url. This is used everywhere.
 mkFileName :: String -> String
-mkFileName = filter (/= ' ') . showDigest . sha256 . BL.fromChunks . (:[]) . pack
+mkFileName = filter (/= ' ') . showDigest . sha256 . BL.fromChunks . (:[]) . BC.pack
 
 
 resourceRootUrl :: String
@@ -119,12 +148,15 @@ resourceRootFolder = appRootFolder ++ "data/image/"
 
 
 -- JS and CSS URLs
-data Asset = BootStrap | JQuery | W2UI | BootStrapC | JQueryC | W2UIC
+data Asset = BootStrap | JQuery | JQueryR | W2UI | BootStrapC | JQueryC | W2UIC | JQMobile | JQMobileC
 asset :: Asset -> Text
 asset BootStrap = "/static/js/lib/bootstrap.min.js"
+asset JQueryR = "http://code.jquery.com/jquery-1.9.1.min.js"
 asset JQuery = "/static/js/lib/jquery.min.js"
 asset W2UI = "/static/js/lib/w2ui-1.1.min.js"
 asset BootStrapC = "/static/css/lib/bootstrap-combined.min.css"
 asset JQueryC = "/static/css/lib/jquery.min.css"
 asset W2UIC = "/static/css/lib/w2ui-1.1.min.css"
-asset _ = error "Not found"
+asset JQMobile = "http://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js"
+asset JQMobileC = "http://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css"
+-- asset _ = error "Not found"

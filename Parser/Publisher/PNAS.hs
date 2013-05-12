@@ -21,12 +21,32 @@ module Parser.Publisher.PNAS (
   jImmunolReader,
 ) where
 
-import Import
+import Parser.Import
 import Text.XML.Cursor as C
 import Parser.Utils
 import Data.Text.Read
 import qualified Data.Text as T
 import Control.Applicative
+
+_pnasReader :: PaperReader
+pnasReader :: PaperReader
+jImmunolReader :: PaperReader
+
+_supportedUrl :: PaperReader -> T.Text -> Maybe SupportLevel
+_supportedUrl2 :: PaperReader -> T.Text -> Maybe SupportLevel
+
+_title, _journal, _volume, _pageFrom, _pageTo, _articleType, _abstract
+    :: ReaderElement' (Maybe Text)
+
+_mainHtml :: ReaderElement' (Maybe PaperMainText)
+_doi :: ReaderElement' Text
+_year :: ReaderElement' (Maybe Int)
+_authors :: ReaderElement' [Text]
+_publisher :: ReaderElement' (Maybe Text)
+
+_refs :: ReaderElement' [Reference]
+ext :: Cursor -> Maybe Reference
+cit :: Cursor -> Maybe (Maybe Citation)
 
 _pnasReader = defaultReader {
   supportedUrl = _supportedUrl,

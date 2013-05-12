@@ -6,6 +6,7 @@
 var host;
 //getHost();
 
+
 function getHost(fn){
   chrome.extension.sendRequest({message: "GetHost"},function(ret){
     var h = ret;
@@ -40,6 +41,17 @@ function getHtml(){
   return doctype+document.documentElement.outerHTML;
 }
 
+var path_addurl = '/paper/add_url'
+
+
+/*
+document.addEventListener('DOMNodeInserted',function(e){
+ // if(e.target.localName == "title"){
+    console.log(e);
+ // }
+});
+*/
+
 //Called when the page is loaded.
 //$(function(tabId,changeInfo,tab){
 window.addEventListener("DOMContentLoaded", function(){
@@ -64,8 +76,8 @@ window.addEventListener("DOMContentLoaded", function(){
 
           //Request server to add a paper.
           var json = {url: url, serverside: true, html: getHtml()};
-          console.log("Sending the following json to: "+addAddress);
-          console.log(json);
+         // console.log("Sending the following json to: "+addAddress);
+         // console.log(json);
 
           $.post(addAddress,json).success(function(res){
             console.log(res);
@@ -120,6 +132,59 @@ function fetchRequest(url){
   });
 }
 
+var citation = new Object();
+citation.meta = [];
+
+function findMeta(rec){
+  var res = undefined;
+  $.each(rec,function(){
+    var n = this.localName;
+    if(n == 'title'){
+      res = this.innerText;
+      console.log(res);
+      citation.pageTitle = res;
+    }else if(n == 'meta'){
+      res = {name: this.name, content: this.content};
+      console.log(res);
+      citation.meta += res;
+    }
+  });
+  return res;
+}
+
+$(function(){
+  addUrl();
+});
+
+function addUrl(){
+  if(notAddedYet){
+    getHost(function(host){
+      $.post(host+path_addurl,{url:location.href, meta: citation},function(res){
+        if(res.supported){
+          chrome.extension.sendRequest({message: "Supported"});
+        }
+      });
+    });
+  }
+  notAddedYet = false;
+}
+
+var notAddedYet = true;
+
+var observer = new MutationObserver(function(mutations) {
+ $.each(mutations,function(idx){
+   console.log(this);
+  var t = findMeta(this.addedNodes);
+  if(t && citation.pageTitle && notAddedYet){
+    addUrl();
+  }
+ });
+}).observe(document, {
+  attributes: true,
+  childList: true,
+  subtree: true,
+  attributeFilter: ["head"]
+});
 
 chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
   if(request.message == "PageAction"){

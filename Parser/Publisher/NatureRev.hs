@@ -21,7 +21,7 @@ module Parser.Publisher.NatureRev (
     natureRevReader
 ) where
 
-import Import
+import Parser.Import
 import Text.XML.Cursor as C
 import Data.Text.Lazy (toStrict)
 import qualified Data.Text as T

@@ -7,45 +7,46 @@ module Model.PaperReader where
 
 import Import
 
-import Data.List
-import Data.Maybe
+-- import Data.List
+-- import Data.Maybe
 import Control.Lens
-import qualified Data.Map as M
-import Control.Monad(mzero)
+-- import qualified Data.Map as M
+-- import Control.Monad(mzero)
 
 import qualified Data.Text as T
-import Data.Text (Text)
+-- import Data.Text (Text)
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.IO as TIO
-import Data.Text.Lazy.Encoding (decodeUtf8,encodeUtf8)
-import qualified Data.ByteString.Lazy as BL
-import Data.ByteString.Lazy.Char8 (pack)
-import Data.ByteString.UTF8 ()
-import Codec.Binary.UTF8.String (decodeString)
-import Data.String 
+-- import Data.Text.Lazy.Encoding (decodeUtf8,encodeUtf8)
+-- import qualified Data.ByteString.Lazy as BL
+-- import Data.ByteString.Lazy.Char8 (pack)
+-- import Data.ByteString.UTF8 ()
+-- import Codec.Binary.UTF8.String (decodeString)
+-- import Data.String 
 
-import Text.Blaze.Renderer.Text
-import qualified Text.HTML.DOM as H
-import Text.XML.Cursor
-import Text.XML (Document)
+import Text.Blaze.Html.Renderer.Text
+-- import qualified Text.HTML.DOM as H
+-- import Text.XML.Cursor
+-- import Text.XML (Document)
 import Text.XML.Selector (maybeText)
 
-import Data.Hashable (hash)
+-- import Data.Hashable (hash)
 
-import Data.Aeson as Ae hiding (object) 
+-- import Data.Aeson as Ae hiding (object) 
 
-import Model
+-- import Model
+-- import Model.Defs
 import Model.PaperP (renderStructured)
-import Model.PaperReaderTypes
+-- import Model.PaperReaderTypes
 
 -- From paperserver-parser package
 import qualified Parser.Paper as P
 import Parser.PaperReader (parseHtml)
 
-import System.IO.Error
-import Control.Concurrent
-import System.Process
-import System.Directory (doesFileExist)
+import Control.Exception (try,IOException)
+-- import Control.Concurrent
+-- import System.Process
+-- import System.Directory (doesFileExist)
 
 type ReaderName = String
 
@@ -54,7 +55,22 @@ samePaper c1 c2 = (citationDoi c1) == (citationDoi c2) || (citationUrl c1) == (c
 
 --ToDo: Complete this.
 mkCitText :: Citation -> Text
-mkCitText c = (fromMaybe "" $ citationJournal c) `T.append` (maybe "" (", " `T.append`) $ fmap (T.pack . show) $ citationYear c)
+mkCitText c = T.concat
+                [fromMaybe "" $ citationJournal c
+                 , maybe "" (\s -> s `T.append` ", ") (citationVolume c)
+                 , fromMaybe "" (citationPageFrom c)
+                 , maybe "" (\s -> T.concat ["-",s]) (citationPageTo c)
+                 , maybe "" (\y -> T.concat [" (",T.pack $ show y,")"]) $ citationYear c
+                 ]
+
+mkCitHtml :: Citation -> Text
+mkCitHtml c = T.concat
+                [maybe "" (\s -> T.concat ["<i>",s,",</i> "]) $ citationJournal c
+                 , maybe "" (\s -> T.concat ["<b>",s,",</b> "]) (citationVolume c)
+                 , fromMaybe "" (citationPageFrom c)
+                 , maybe "" (\s -> T.concat ["-",s]) (citationPageTo c)
+                 , maybe "" (\y -> T.concat [" (",T.pack $ show y,")"]) $ citationYear c
+                 ]
 
 parsePaper :: Url -> FilePath -> IO (Maybe PaperP)
 parsePaper url inpath = do
@@ -68,7 +84,7 @@ tmap2 (f,g) x = (f x,g x)
 getHtmlFromFileUrl :: (Text -> String) -> Text -> IO Text
 getHtmlFromFileUrl func url = do
   let file = func url
-  estr <- try (TIO.readFile file)
+  estr <- try (TIO.readFile file) :: IO (Either IOException Text)
   case estr of 
     Left err -> do
       TIO.putStrLn url

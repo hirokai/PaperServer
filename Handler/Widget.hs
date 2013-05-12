@@ -3,8 +3,9 @@ module Handler.Widget where
 import Import
 
 import qualified Data.Text as T
-import Data.Maybe
-import Handler.Utils
+-- import Data.Maybe
+-- import Handler.Utils
+-- import Model.Defs
 import Model.PaperReader
 
 -- import Model.PaperReader.Utils (mkCitText)
@@ -15,12 +16,12 @@ import Text.Blaze.Html5.Attributes
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
-import Control.Monad
+-- import Control.Monad
 
-import Model.PaperP as P
+-- import Model.PaperP as P
 import qualified Parser.Paper as P 
 import Control.Lens
-import Text.HTML.SanitizeXSS (sanitize)
+-- import Text.HTML.SanitizeXSS (sanitize)
 
 citationWidget cit = [hamlet|
 <p #citation>
@@ -68,7 +69,7 @@ paperInfoAjax paper = do
   let refs = paperReferences paper
   $(widgetFile "paperinfo_modal_ajax")
 
-nowrapLayout :: GWidget s App () -> GHandler s App RepHtml
+-- nowrapLayout :: GWidget s App () -> GHandler s App RepHtml
 nowrapLayout widget = do
     pc <- widgetToPageContent widget
     -- This is a bit strange, but somehow pageBody returns a whole html.

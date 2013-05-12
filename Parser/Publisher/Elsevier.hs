@@ -21,7 +21,8 @@ module Parser.Publisher.Elsevier (
 -- elsevier2Reader : Not supported yet.
 --
 
-import Import
+import Parser.Import
+-- import Safe
 import Text.XML
 import Text.XML.Cursor as C
 
@@ -53,6 +54,25 @@ _elsevierReader = defaultReader {
   mainHtml = onlyFull _mainHtml
 --  readerName = _readerName
 }
+
+_elsevierReader, elsevier1Reader, elsevier2Reader :: PaperReader
+
+_supportedUrl :: PaperReader -> T.Text -> Maybe SupportLevel
+_sup1 :: PaperReader -> T.Text -> t -> Maybe SupportLevel
+_sup2 :: PaperReader -> t1 -> t2 -> Maybe a
+
+_title, _journal, _volume, _pageFrom, _pageTo, _articleType, _abstract
+    :: ReaderElement' (Maybe Text)
+
+_mainHtml :: ReaderElement' (Maybe PaperMainText)
+_doi :: ReaderElement' Text
+_year :: ReaderElement' (Maybe Int)
+_authors :: ReaderElement' [Text]
+_publisher :: ReaderElement' (Maybe Text)
+
+_refs :: ReaderElement' [Reference]
+_figs :: ReaderElement' [Figure]
+cit2 :: Cursor -> Citation
 
 elsevier1Reader = _elsevierReader{supported=_sup1,readerName = \x -> "Elsevier1"}
 elsevier2Reader = _elsevierReader{supported=_sup2,readerName = \x -> "Elsevier2"}
@@ -93,25 +113,35 @@ noFig :: [Node] -> [Node]
 noFig = id -- Stub
 
 citTxt :: Cursor -> [T.Text]
-citTxt c = (fromMaybe [] . fmap f . headm . queryT [jq| #citationInfo > input |]) c
+citTxt c = (fromMaybe [] . fmap f . headMay . queryT [jq| #citationInfo > input |]) c
   where
     f ::Cursor -> [T.Text]
     f = T.lines . T.concat . attribute "value"
 
 cit :: Cursor -> Citation
 cit c = case citTxt c of
-          [] -> trace "empty!" emptyCitation
+          [] -> cit2 c
           ls -> parseCit ls
+
+cit2 c =
+  let
+    txt = innerText $ queryT [jq| p.volIssue |] c
+  in
+    case parse p "" txt of
+      Left err -> emptyCitation
+      Right (v,pf,pt,y) ->
+        emptyCitation{_citationVolume = Just v,_citationPageFrom=Just pf,
+          _citationPageTo=Just pt,_citationYear=Just y}
+
 ------
 parseCit :: [T.Text] -> Citation
 parseCit ts | length ts == 6
-              = trace "Metainfo Found."
-                        emptyCitation
+              = emptyCitation
                           {_citationTitle=Just (ts!!0),_citationAuthors=T.splitOn ", " (ts!!1),
                             _citationJournal=Just (ts!!3),
                             _citationVolume=fmap vol c,_citationDoi=Just doi,_citationPageFrom=fmap pf c,
                             _citationPageTo=fmap pt c,_citationYear=fmap year c}
-            | otherwise = trace "meta info not found." emptyCitation
+            | otherwise = emptyCitation
   where
     doi = T.drop 5 (ts!!5)
     c = trace (show ts) $ either (const Nothing) Just (parse p "" (ts!!4))

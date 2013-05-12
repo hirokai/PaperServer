@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell, NoImplicitPrelude #-}
 
-module Import (
-module Import
+module Parser.Import (
+module Parser.Import
 , module Parser.Paper
 , module Parser.PaperReaderTypes
 , module Text.XML.Selector
@@ -13,16 +13,18 @@ module Import
 , module Safe
 , module Debug.Trace
 , module Data.Monoid
+, module Prelude
 -- , head, tail
 ) where
 
 import Prelude hiding (head,tail)
 import Data.Maybe
 
-import qualified Data.Text as Import.T
-import qualified Data.Text.Lazy as LT
+-- import qualified Data.Text as Import.T
+-- import qualified Data.Text.Lazy as LT
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
+import Data.Text as Parser.Import (Text)
 
 import Text.XML.Selector
 import Text.XML.Selector.TH

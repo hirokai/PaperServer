@@ -38,7 +38,6 @@
                
             <button #button-figs .btn-small .btn title="List of figures">
               <i .icon-picture>
-               
           <span .btn-group data-toggle="buttons-radio">
             <button #button-formatted .btn-small .btn .active>
               Formatted
@@ -47,36 +46,23 @@
           <a href=@{EpubPaperR paperId} title="Download EPUB">
             <button #button-epub .btn-small .btn>
               <i .icon-book> 
-              
           <a href=@{AuthR LogoutR}>
             <button #button-logout .btn .btn-small .pull-right>
               Logout
           <button #button-help .btn .btn-small .pull-right>
               ?
     <div #outerbox>
-      <div #leftbox data-spy="scroll" data-target="#navbar">
-        <div #leftinner>
-          <div #titlediv>
-            $maybe ptype <- ctype
-              <span .articleType> #{ptype}
-            <h1> #{preEscapedToHtml $ fromMaybe "(No title)" $ P._citationTitle cit}
-            ^{citationWidget cit'}
-          $maybe abstract <- mabstract
-            <div #abstract>
-              #{preEscapedToHtml $ sanitize abstract}
-          $maybe mainHtml <- mmainHtml
-            <div #maintext>
-              #{mainHtml}
-      <div #rightbox>
-        <div .figures #figures>
-        $forall figure <- figures
-          <div ##{P._figId figure} .fig>
-            <div>
-              <img .figimg src=#{localRes $ P._figImg figure}>
-            <div>
-              #{preEscapedToHtml $ P._figAnnot figure}
-        ^{referencesWidgetFormatB refs'}
-
+      <div #titlediv>
+        $maybe ptype <- ctype
+          <span .articleType> #{ptype}
+        <h1> #{preEscapedToHtml $ fromMaybe "(No title)" $ P._citationTitle cit}
+        ^{citationWidget cit'}
+      $maybe abstract <- mabstract
+        <div #abstract>
+          #{preEscapedToHtml $ sanitize abstract}
+      $maybe mainHtml <- mmainHtml
+        <div #maintext>
+          #{mainHtml}
     <div .modal .figures #figModal tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="display:none;top:0px;">
       <div .modal-header>
         <button type="button" .close data-dismiss="modal" aria-hidden="true">x

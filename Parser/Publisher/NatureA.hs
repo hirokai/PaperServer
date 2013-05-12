@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 --
--- Module      :  Model.PaperReader.NatureL
+-- Module      :  Model.PaperReader.NatureA
 -- Copyright   :
 -- License     :  BSD3
 --
@@ -14,35 +14,34 @@
 
 
 --
--- For Nature (new format) letter
+-- For Nature (new format) article
 --
 
-
-{-# LANGUAGE DoAndIfThenElse, OverloadedStrings #-}
-
-module Parser.Publisher.NatureL (
-    natureLReader
+{-# LANGUAGE DoAndIfThenElse #-}
+module Parser.Publisher.NatureA (
+    natureAReader
 ) where
 
-import Import
+import Parser.Import
 import Text.XML
 import Text.XML.Cursor as C
-import Data.Maybe
-import Data.List
-import Control.Applicative
-import qualified Data.Map as M
-import Parser.Utils
-
-import Parser.Publisher.NatureCommon (_publisher,_pageFrom,_pageTo,_volume,_authors,_year)
-
+-- import Data.Maybe
 import qualified Data.Text as T
+import Data.Text.Lazy  (toStrict)
+import Data.List
+import Parser.Utils
+import qualified Data.Map as M
 
-natureLReader :: PaperReader
-natureLReader = defaultReader {
+-- import Debug.Trace
+
+import Parser.Publisher.NatureCommon (_title,_volume,_pageFrom,_pageTo)
+
+natureAReader :: PaperReader
+natureAReader = defaultReader {
   supportedUrl = _supportedUrl,
   supported = _supported,
   title = anyLevel _title,
-  abstract = anyLevel _abstract,
+  abstract = absLevel _abstract,
   doi = anyLevel _doi,
   journal = anyLevel _journal,
   volume = anyLevel _volume,
@@ -55,38 +54,43 @@ natureLReader = defaultReader {
   figs = onlyFullL _figs,
   toc = onlyFull _toc,
   mainHtml = onlyFull _mainHtml,
-  publisher = _publisher,
   readerName = _readerName
 }
 
-
---ToDo: refactor scraping by using dom-selector
-
-_readerName _ = "NatureL"
+_readerName _ = "NatureA"
 
 _supportedUrl _ url = boolToSupp $ "http://www.nature.com/nature/" `T.isPrefixOf` url
-_supported r url c = boolToSupp $ isJust ((supportedUrl r) r url) && ((articleType r) r SUndecidable c == Just "Letter")
-_title _ = inner . queryT [jq| h1.article-heading |]
+_supported r url c = boolToSupp  $ isJust ((supportedUrl r) r url) && ((articleType r) r SUndecidable c == Just "Article")
 
-_abstract _ cur = render $ take 1 $ map node $ (queryT [jq| #first-paragraph |] cur) ++
-                                        (queryT [jq| #abstract p |] cur)
+_mainHtml _ = fmap FlatHtml . render . map subLink . nofignav . nolater .
+              noabstract . map node . concatMap (element "section") . descendant
 
-
--- These are different from ones in NatureCommon
-_doi _ = innerText . queryT [jq| dd.doi |]
+_doi _ = innerText . queryT [jq|dd.doi|]
 
 _journal _ cursor = Just $ head $ map (T.strip . head) $ filter (\x -> not $ null x) $ cursor $// element "p" &| attributeIs "class" "article-type" &.// content
 
+_year _ cursor = headm (getMeta "DC.date" cursor) >>= f
+    where
+      f s | T.length s >= 4 = Just $ read $ T.unpack (T.take 4 s)
+          | otherwise = Nothing                  
+
+_authors _ = getMeta "DC.creator"
+
+_abstract _ cur = if null es then Nothing else (Just . toStrict . renderNodes . (:[]) . node . head) es
+    where
+     es = cur $| query "#abstract p" >=> child
+
+-- _title _ cursor = Just $ T.concat $ cursor $| query "h1.article-heading" &.// content
+
+-- _articleType _ cursor = Just $ head $ map (T.strip . last) $ filter (\x -> not $ null x) $
+--                      cursor $// element "p" &| attributeIs "class" "article-type" &.// content
+
 _articleType _ cursor = headm $ map (T.strip . last) $ filter (\x -> not $ null x) $
                       cursor $// element "p" &| attributeIs "class" "article-type" &.// content
--- --------
---
---
-
 
 _refs _ cur = map r ns
     where
-      ns = map node $ cur $| queryT [jq| ol.references > li |]
+      ns = map node $ cur $| query "ol.references > li"
       r n@(NodeElement (Element name as cs)) = Reference (refid as) (refname as)(Just emptyCitation) (Just (txt cs)) (url n)
       refid as = fromMaybe "" (M.lookup "id" as)
       refname as = T.drop 3 (refid as)
@@ -98,8 +102,11 @@ _refs _ cur = map r ns
       f s = s
 
 _figs _ cur = []
-_toc _ _ = Nothing
-_mainHtml _ cursor = fmap FlatHtml $ render $ map subLink $ nofignav $ extractMainL $ map node $ (cursor $// element "section")
+
+_toc _ cur = Just $ (\x -> traceShow x x) $ T.intercalate "::" $ map (innerTextN . node) $ nav $| query "li"
+    where
+      nav = head $ cur $| query "section nav"
+
 
 subLink :: Node->Node
 subLink (NodeElement (Element n as cs)) = NodeElement (Element n as (map f cs))
@@ -113,10 +120,6 @@ subLink (NodeElement (Element n as cs)) = NodeElement (Element n as (map f cs))
         tok = T.splitOn "#" url
 subLink n = n
 
-extractMainL :: [Node]->[Node]
-extractMainL ns = filter ((nodeHaving f)) ns
-  where
-    f n = eid n `elem` map Just ["main","methods"]
 
 nofignav = map (remove (\n -> ename n `elem` map Just ["nav","figure"]))
 
@@ -138,5 +141,16 @@ nolater ns = fst $ break f ns
 
 defParse :: Cursor -> Maybe T.Text
 defParse _ = Nothing
+
+{-
+doi cursor = T.concat $ cursor $// element "dd"
+               >=> attributeIs "class" "doi"
+               &// content
+-}
+
+
+-- This does not work correctly.
+--paperType c = Just $ T.strip $ (trace (show es) es)
+--  where es = (innerHtml . (:[]) . last) $ (c $| query "p.article-type" >=> child)
 
 

@@ -1,10 +1,13 @@
 /static StaticR Static getStatic
 /auth   AuthR   Auth   getAuth
+-- /auth/login   LoginR  GET OPTIONS
+-- /auth/logout  LogoutR   GET
 
 /favicon.ico FaviconR GET
 /robots.txt RobotsR GET
 
 /listj PaperListWithJsonR GET
+/m/list PaperListMobileR GET
 /list PaperListR GET
 /tablet/list PaperListTabletR GET
 /list.json PaperListJsonR GET POST
@@ -13,11 +16,12 @@
 /list/alltags ListAllTagsR  GET
 
 -- ToDo: refactor names.
+/paper/add_url AddUrlR POST
 /paper/add AddPaperR POST OPTIONS
 /paper/supported SupportedPaperR GET POST
 /paper/a/#PaperId PaperRa GET
 /paper/b/#PaperId PaperRb GET
-/paper/ma/#PaperId MobilePaperRa GET
+/m/paper/a/#PaperId MobilePaperRa GET
 /tablet/paper/b/#PaperId PaperTabletRb GET
 /paper/raw/#PaperId RawHtmlR GET
 /paper/cit/#PaperId PaperCitationR GET
@@ -47,9 +51,13 @@
 
 /exportall    ExportAllR POST
 
-/ HomeR GET 
+/ HomeR GET
+
+/start StartR GET
 
 /welcome WelcomeR GET
+/m/welcome WelcomeMobileR GET
+/unregistered UnregisteredR GET
 
 /signup SignUpR GET
 
@@ -58,5 +66,4 @@
 /importSubmit LibraryImportSubmitR POST
 /import LibraryImportR GET
 
-/mobile/list MobilePaperListR GET
 

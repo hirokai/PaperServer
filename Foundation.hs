@@ -11,16 +11,15 @@ import Yesod.Default.Util (addStaticContentExternal)
 import Network.HTTP.Conduit (Manager)
 import qualified Settings
 import Settings.Development (development)
-import qualified Database.Persist.Store
-import Settings.StaticFiles
+import qualified Database.Persist
+-- import Database.Persist.Sql (SqlPersistT)
+-- import Settings.StaticFiles
 import Database.Persist.MongoDB hiding (master)
 import Settings (widgetFile, Extra (..))
 import Model
 import Text.Jasmine (minifym)
-import Web.ClientSession (getKey)
 import Text.Hamlet (hamletFile)
-
-import Text.Blaze.Html (Html)
+import System.Log.FastLogger (Logger)
 
 import Data.Text (Text)
 
@@ -31,9 +30,10 @@ import Data.Text (Text)
 data App = App
     { settings :: AppConfig DefaultEnv Extra
     , getStatic :: Static -- ^ Settings for static file serving.
-    , connPool :: Database.Persist.Store.PersistConfigPool Settings.PersistConfig -- ^ Database connection pool.
+    , connPool :: Database.Persist.PersistConfigPool Settings.PersistConf -- ^ Database connection pool.
     , httpManager :: Manager
-    , persistConfig :: Settings.PersistConfig
+    , persistConfig :: Settings.PersistConf
+    , appLogger :: Logger
     }
 
 -- Set up i18n messages. See the message folder.
@@ -60,30 +60,22 @@ mkMessage "App" "messages" "en"
 -- split these actions into two functions and place them in separate files.
 mkYesodData "App" $(parseRoutesFile "config/routes")
 
-type Form x = Html -> MForm App App (FormResult x, Widget)
+type Form x = Html -> MForm (HandlerT App IO) (FormResult x, Widget)
 
 -- Please see the documentation for the Yesod typeclass. There are a number
 -- of settings which can be configured by overriding methods here.
 instance Yesod App where
     approot = ApprootMaster $ appRoot . settings
 
-    maximumContentLength _ (Just LibraryImportSubmitR) = 2 * 1024 * 1024 * 1024 -- 2 gigabytes
-    -- maximumContentLength _ (Just AddPaperR) = 1024 * 1024 * 1024 -- 1 gigabytes
-    maximumContentLength _ _ = 30 * 1024 * 1024 -- 30 megabytes
-
-
     -- Store session data on the client in encrypted cookies,
     -- default session idle timeout is 120 minutes
-    makeSessionBackend _ = do
-        key <- getKey "config/client_session_key.aes"
-        let timeout = 24 * 60 * 60 -- 24 hours
-        (getCachedDate, _closeDateCache) <- clientSessionDateCacher timeout
-        return . Just $ clientSessionBackend2 key getCachedDate
+    makeSessionBackend _ = fmap Just $ defaultClientSessionBackend
+        (3 * 24 * 60 * 60) -- 3 days
+        "config/client_session_key.aes"
 
     defaultLayout widget = do
         master <- getYesod
-        -- mmsg <- getMessage
-        mmsg <- return Nothing :: GHandler sub master (Maybe Html)
+        mmsg <- getMessage
 
         -- We break up the default layout into two components:
         -- default-layout is the contents of the body tag, and
@@ -92,6 +84,10 @@ instance Yesod App where
         -- you to use normal widget features in default-layout.
 
         pc <- widgetToPageContent $ do
+          {-  $(combineStylesheets 'StaticR
+                [ css_normalize_css
+                , css_bootstrap_css
+                ]) -}
             $(widgetFile "default-layout")
         hamletToRepHtml $(hamletFile "templates/default-layout-wrapper.hamlet")
 
@@ -108,24 +104,34 @@ instance Yesod App where
     -- and names them based on a hash of their content. This allows
     -- expiration dates to be set far in the future without worry of
     -- users receiving stale content.
-    addStaticContent = addStaticContentExternal minifym base64md5 Settings.staticDir (StaticR . flip StaticRoute [])
-
-    -- Place Javascript at bottom of the body tag so the rest of the page loads first
-    jsLoader _ = BottomOfBody
+    addStaticContent =
+        addStaticContentExternal minifym genFileName Settings.staticDir (StaticR . flip StaticRoute [])
+      where
+        -- Generate a unique filename based on the content itself
+        genFileName lbs
+            | development = "autogen-" ++ base64md5 lbs
+            | otherwise   = base64md5 lbs
 
     isAuthorized (AuthR _) _ = return Authorized
     isAuthorized WelcomeR _ = return Authorized
+    isAuthorized WelcomeMobileR _ = return Authorized
     isAuthorized SignUpR _ = return Authorized
+    isAuthorized UnregisteredR _ = return Authorized
     isAuthorized ConfirmSignUpR _ = return Authorized
     isAuthorized HomeR _ = return Authorized
 
     isAuthorized h _ = isUser
 
+    -- Place Javascript at bottom of the body tag so the rest of the page loads first
+    jsLoader _ = BottomOfBody
+
     -- What messages should be logged. The following includes all messages when
     -- in development, and warnings and errors in production.
-    -- shouldLog _ _source level =
-    --    development || level == LevelWarn || level == LevelError
-    logLevel _ = LevelInfo
+    shouldLog _ _source level =
+       development || level == LevelWarn || level == LevelError || level == LevelInfo
+
+    makeLogger = return . appLogger
+
 
 isUser = do
     -- return Authorized
@@ -138,37 +144,42 @@ isUser = do
           maybeuser <- runDB $ getBy (UniqueUser user)
           case maybeuser of
             Just _ -> return Authorized
-            Nothing -> return $ Unauthorized "Sign up first."
+            Nothing -> redirect UnregisteredR
+
 
 -- How to run database actions.
 instance YesodPersist App where
     type YesodPersistBackend App = Action
-    runDB f = do
-        master <- getYesod
-        Database.Persist.Store.runPool
-            (persistConfig master)
-            f
-            (connPool master)
+    runDB = defaultRunDB persistConfig connPool
 
 instance YesodAuth App where
     type AuthId App = Text
 
     -- Where to send a user after successful login
-    loginDest _ = PaperListR 
+    loginDest _ = StartR
     -- Where to send a user after logout
     logoutDest _ = WelcomeR
-
-    getAuthId = return . Just . credsIdent
- {-   getAuthId creds = runDB $ do
+{-
+    getAuthId creds = runDB $ do
         x <- getBy $ UniqueUser $ credsIdent creds
         case x of
-            Just (Entity uid user) -> return $ Just (userEmail user)
-            Nothing -> return Nothing -}
+            Just (Entity uid (User email _ _)) -> return $ Just email
+            Nothing -> return Nothing
+-}
+    getAuthId = return . Just . credsIdent
 
     -- You can add other plugins like BrowserID, email or OAuth here
-    authPlugins _ = [authBrowserId, authGoogleEmail]
-    -- authPlugins _ = [authBrowserId]
-
+    authPlugins _ = [authBrowserId def, authGoogleEmail]
+{-
+    maybeAuthId = do
+      -- ss <- getSession
+      -- liftIO $ print ss
+      ms <- lookupSession "_ID"  -- This is email actually.
+      case ms of
+          Nothing -> return Nothing
+          Just s -> return -}
+    maybeAuthId = lookupSession "_ID"
+                
     authHttpManager = httpManager
 
 -- This instance is required to use forms. You can modify renderMessage to
@@ -186,3 +197,33 @@ getExtra = fmap (appExtra . settings) getYesod
 -- wiki:
 --
 -- https://github.com/yesodweb/yesod/wiki/Sending-email
+
+
+
+{-
+import Prelude
+import Yesod
+import Yesod.Static
+import Yesod.Auth
+import Yesod.Auth.BrowserId
+import Yesod.Auth.GoogleEmail
+import Yesod.Default.Config
+import Yesod.Default.Util (addStaticContentExternal)
+import Network.HTTP.Conduit (Manager)
+import qualified Settings
+import Settings.Development (development)
+-- import qualified Database.Persist.Store
+import Settings.StaticFiles
+import Database.Persist.MongoDB hiding (master)
+import Settings (widgetFile, Extra (..))
+import Model
+import Text.Jasmine (minifym)
+-- import Web.ClientSession (getKey)
+import Text.Hamlet (hamletFile)
+
+import Text.Blaze.Html (Html)
+
+import Data.Text (Text)
+-}
+
+

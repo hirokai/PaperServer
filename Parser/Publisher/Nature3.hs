@@ -23,13 +23,13 @@ module Parser.Publisher.Nature3 (
 ) where
 
 
-import Import
-import Data.Maybe
+import Parser.Import
+-- import Data.Maybe
 import Text.XML.Cursor
 import Parser.Utils
 import qualified Data.Text as T
 
-import Control.Applicative ((<|>))
+-- import Control.Applicative ((<|>))
 
 import Parser.Publisher.NatureCommon
 
@@ -71,7 +71,7 @@ _abstract _ c = (inner $ queryT [jq|p.lead|] c)
 _mainHtml _ = fmap FlatHtml . render . rmElem "div" "abs" [] . rmElem "div" "" ["figure-table"] . map node . queryT [jq| #articlebody |]
 
 _refs _ c = case cs1 of
-              [] -> map extCit2 (Prelude.zip [1..] cs2)
+              [] -> map extCit2 (zip [1..] cs2)
               _ -> map extCit1 cs1
   where
     cs1 = queryT [jq| #References tr |] c

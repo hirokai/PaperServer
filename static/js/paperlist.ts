@@ -1,5 +1,5 @@
-/// <reference path="./jquery.d.ts" />
-/// <reference path="./bootstrap.d.ts" />
+/// <reference path="./lib/jquery.d.ts" />
+/// <reference path="./lib/bootstrap.d.ts" />
 //From: https://github.com/borisyankov/DefinitelyTyped/blob/master/
 
 //
@@ -17,6 +17,8 @@ var path_replacetags = '/paper/replace_tags';
 var path_delete = '/paper/delete';
 var path_reparse = '/paper/reparse';
 var path_reader = '/start_reader'
+
+var selected = [];
 
 //mode 0: normal, 1: figure, 2: info, 4: tag, 8: tag input
 enum Mode {
@@ -188,16 +190,18 @@ function registerKeyEvents(){
       });  // Enter
   addKey(Mode.mTag,13,function(e){return tagModalCheckEnter();});   // Enter
   addKey(Mode.mNormal,65,function(e){
-    if(checkNotInput()){
+  if(checkNotInput()){
       return toggleTagbar();}});   // a
   addKey(Mode.mNormal,84,function(e){  //t
     if(checkNotInput()){
+      selected = selectedIds();
       showTagAddWindow(true);
       return false; // to prevent key 't' input to the text box
     }
   });
   addKeyS(Mode.mNormal,84,function(e){  //T
     if(checkNotInput()){
+      selected = selectedIds();
       showTagEditWindow(true);
       return false; // to prevent key 't' input to the text box
     }
@@ -249,7 +253,6 @@ $('#alert-close').click(function() {
   $('#alert-box').css('visibility','hidden');
 });
 
-  console.log( $('ul a'));
   $('ul a').click(function(e){
       console.log(e);
   });
@@ -456,6 +459,7 @@ function showTagAddWindow(shown): bool {
     input.focus();
     input.val('');
     input.attr('data-mode','add');
+    $('#myModalLabel').html('Add tags');
   } else {
     changeMode(Mode.mNormal);
     $('#tagModal').modal('hide');
@@ -479,6 +483,7 @@ function showTagEditWindow(shown): bool {
     input.focus();
     input.val(tagtxt);
     input.attr('data-mode','update');
+    $('#myModalLabel').html('Edit tags');
   } else {
     changeMode(Mode.mNormal);
     $('#tagModal').modal('hide');
@@ -509,7 +514,7 @@ function tagModalCheckEnter() {
   var mode = input.attr('data-mode');
   if(input.is(":focus")){
     $('#tagModal').modal('hide');
-    var ids = selectedIds();
+    var ids = selected;
     var tagstext = splitTagText(input.val()).join("\n");
     var idtext = unsplitIds(ids);
     var token = getSecretToken();
@@ -537,8 +542,10 @@ function updateTagFilter() {
   selectedTags = [];
   $("ul.stacked li.active").each(function(){
       selectedTags.push($("span.tagname",this).text());
-  });
-  w2ui['paperlist'].search([{field: 'tags', value: selectedTags.join('\n'),type: "text",operator: "is"}]);
+      });
+      var obj = [{field: 'tags', value: selectedTags.join('\n'),type: "text",operator: "is"}];
+  console.log(obj);
+  w2ui['paperlist'].search(obj);
 }
 
 var path_gettags: string = '/list/alltags';
@@ -685,7 +692,7 @@ function movePage(delta: number): void {
   var num_p = Math.ceil(ui.total / ui.recordsPerPage);
   if(newp >= num_p){
     newp = num_p - 1;
-  }else if (newp < 0) {
+  } else if (newp < 0) {
     newp = 0;
   }
   ui.goto(newp);
@@ -718,44 +725,43 @@ $('#maindiv').w2layout({
     footer: true,
   	toolbar: true,	
 		toolbarDelete: true,
-    toolbarSearch: false
+    toolbarSearch: true
     },
-  //  multiSearch: false,
+    multiSearch: false,
   columns: [
     { field: 'recid', caption: '#', size: '20px', sortable: false  }
-    , { field: 'title', caption: 'Title', size: '60%', resizable: true, sortable: true  }
-    , { field: 'cittxt', caption: 'Citation', size: '250px' , resizable: true, sortable: true }
-    , { field: 'type', caption: 'type', size: '100px', sortable: true, render: function (record, index) {
-          return record.citation.type;
-      }}
+    , { field: 'citation.title', caption: 'Title', size: '60%', resizable: true, sortable: true  }
+    , { field: 'cittext', caption: 'Citation', size: '250px' , resizable: true, sortable: true }
+    , { field: 'citation.type', caption: 'type', size: '100px', sortable: true}
     , { field: 'tags', caption: 'Tags', size: '100px', sortable: false, editable: { type: 'text' },
         render: function (record, index) {
+       // console.log(record);
           return record.tags.join(', ');
     }}
-    , { field: 'abstract_available', caption: 'Abs', size: '30px', sortable: true, render: function (record, index) {
-       //  console.log(record);
+    , { field: 'available.abstract', caption: 'Abs', size: '30px', sortable: true, render: function (record, index) {
+    // console.log(record);
          if(record.available.abstract){
             return '<i class="icon-ok"></i> ';
          }else{
             return "";
          }
     }}
-    , { field: 'fulltext_available', caption: 'Full', size: '30px', sortable: true, render: function (record, index) {
-        //  console.log(record);
+    , { field: 'available.fulltext', caption: 'Full', size: '30px', sortable: true, render: function (record, index) {
+          //console.log(record);
          if(record.available.fulltext){
             return '<i class="icon-ok"></i> ';
          }else{
             return "";
          }
     }}
-    , { field: 'refs_available', caption: 'Ref', size: '30px', sortable: true, render: function (record, index) {
+    , { field: 'available.references', caption: 'Ref', size: '30px', sortable: true, render: function (record, index) {
          if(record.available.references){
             return '<i class="icon-ok"></i> ';
          }else{
             return "";
          }
     }}
-    , { field: 'figs_available', caption: 'Fig', size: '30px', sortable: true, render: function (record, index) {
+    , { field: 'available.figures', caption: 'Fig', size: '30px', sortable: true, render: function (record, index) {
         //  console.log(record);
          if(record.available.figures){
             return '<i class="icon-ok"></i> ';
@@ -769,9 +775,9 @@ $('#maindiv').w2layout({
     	multiSearch: true,
   	searches: [
 		{ field: 'any', caption: 'Any field', type: 'text' }
-		, { field: 'tags', caption: 'Tags', type: 'text' }
-		,{ field: 'date', caption: 'Date added', type: 'date' }
-		,{ field: 'type', caption: 'Type', type: 'list', items: ['Any','Letter','Article','Review'] }
+		//, { field: 'tags', caption: 'Tags', type: 'text' }
+    //,{ field: 'date', caption: 'Date added', type: 'date' }
+	//	,{ field: 'type', caption: 'Type', type: 'list', items: ['Any','Letter','Article','Review'] }
 		, { field: 'tags', caption: 'Tag', type: 'text' }
 	],
   //This is used before list.json ajax loading. You need to add all fields.

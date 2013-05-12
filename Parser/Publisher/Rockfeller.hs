@@ -21,12 +21,24 @@ module Parser.Publisher.Rockfeller (
   rupressReader    
 ) where
 
-import Import
+import Parser.Import
 import Text.XML.Cursor as C
 import Parser.Utils
 
 
 import qualified Data.Text as T
+
+_rupressReader :: PaperReader
+rupressReader :: PaperReader
+
+_title, _journal, _volume, _pageFrom, _pageTo, _articleType, _abstract
+    :: ReaderElement' (Maybe Text)
+
+_mainHtml :: ReaderElement' (Maybe PaperMainText)
+_doi :: ReaderElement' Text
+_year :: ReaderElement' (Maybe Int)
+_authors :: ReaderElement' [Text]
+_publisher :: ReaderElement' (Maybe Text)
 
 _rupressReader = defaultReader {
   supportedUrl = _supportedUrl,

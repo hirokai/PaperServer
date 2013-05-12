@@ -21,18 +21,36 @@ module Parser.Publisher.Wiley (
   wileyReaderC    
 ) where
 
-import Import
+import Parser.Import
 import qualified Data.Text as T
 import Data.Text.Lazy (toStrict)
 import Data.Text.Read
 
-import Data.Maybe
+-- import Data.Maybe
 import Control.Applicative ((<$>),(<*>))
 import Control.Monad
 
 import Text.XML.Cursor as C
 
 import Parser.Utils
+
+_wileyReader :: PaperReader
+wileyReaderC :: PaperReader
+_articleType :: PaperReader -> Cursor -> Maybe Text
+_supportedUrl :: PaperReader -> Text -> Maybe SupportLevel
+_doi :: PaperReader -> Cursor -> Text
+_journal :: PaperReader -> Cursor -> Maybe Text
+_publisher :: PaperReader -> Cursor -> Maybe Text
+_title :: PaperReader -> Cursor -> Maybe Text
+_volume :: PaperReader -> Cursor -> Maybe Text
+_pageFrom :: PaperReader -> Cursor -> Maybe Text
+_pageTo :: PaperReader -> Cursor -> Maybe Text
+_year :: PaperReader -> Cursor -> Maybe Int
+_authors :: PaperReader -> Cursor -> [Text]
+_abstractC :: PaperReader -> Cursor -> Maybe Text
+_mainHtmlC :: PaperReader -> Cursor -> Maybe PaperMainText
+_refs :: PaperReader -> Cursor -> [Reference]
+mkRef :: Cursor -> Reference
 
 _wileyReader = defaultReader {
   supportedUrl = _supportedUrl,
@@ -59,7 +77,16 @@ wileyReaderC
 
 _articleType _ = join . fmap (inner . (:[])) . headm . queryT [jq| p.articleCategory |]
 
-_supportedUrl _ url = boolToSupp $ "http://onlinelibrary.wiley.com/doi/" `T.isPrefixOf` url && "/full" `T.isSuffixOf` url
+_supportedUrl _ url =
+  if "http://onlinelibrary.wiley.com/doi/" `T.isPrefixOf` url then
+    if "/full" `T.isInfixOf` url then
+      Just SFullText
+    else if "/abstract" `T.isInfixOf` url then
+      Just SAbstract
+    else
+      Nothing
+  else
+    Nothing 
 
 _doi _ = fromMaybe "" . headm . getMeta "citation_doi"
 
@@ -117,7 +144,8 @@ _figs _ cur =
         name = maybeText $ toStrict $ innerHtml $ queryT [jq| div > p > span.label |] c
         caption = do
           p <- headMay $ queryT [jq| div.caption > p |] c
-          txt <- (render . map node . tail . child) p
+          ts <- (tailMay . child) p
+          txt <- (render . map node) ts 
           return $ dropName txt
         img = do
           a <- headMay $ queryT [jq| a.figZoom |] c

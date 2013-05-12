@@ -7,7 +7,8 @@ module Parser.Publisher.ACS (
     acsAReader, acsLReader
   ) where
 
-import Import
+import Prelude
+import Parser.Import
 
 import Text.XML
 import Text.XML.Cursor as C
@@ -22,13 +23,13 @@ import Text.Parsec
 import Parser.Utils
 import Control.Lens
 import Data.Tree
-import Safe
-import System.IO
-import Control.Applicative hiding ((<|>))
-import Control.Monad
+-- import Safe
+-- import System.IO
+-- import Control.Applicative hiding ((<|>))
+-- import Control.Monad
 import qualified Data.Map as M
 import Settings
-import Parser.Utils
+-- import Parser.Utils
 
 _acsReader = defaultReader {
   supportedUrl = _supportedUrl,
@@ -126,7 +127,8 @@ _supportedUrl _ url
 
 _supportedA = supportedWith ["Article", "Research Article", "Articles",
                               "Review",
-                              "Featured Article", "Perspective","JOCSynopsis","Laboratory Experiment"]
+                              "Featured Article", "Perspective","JOCSynopsis","Laboratory Experiment",
+                              "Invited Feature Article"]
 
 
 _supportedL = supportedWith ["Communication","Letter",

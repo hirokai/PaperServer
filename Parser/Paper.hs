@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell, ImplicitPrelude #-}
 --
 -- Paper
 --
@@ -11,22 +11,23 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as B
+-- import qualified Data.ByteString as B
 import Data.Char (toLower)
 
-import Data.Maybe
-import Control.Applicative
+-- import Data.Maybe
+-- import Control.Applicative
 import Control.Lens hiding ((.=))
 import Data.Tree
 
 import Data.Aeson
 import Data.Aeson.TH
 
-import Text.XML.Cursor
+-- import Text.XML.Cursor
 import Text.XML.Selector (maybeText)
 
-import Parser.Utils
+-- import Parser.Utils
 
+import Data.Typeable
 
 type Url = Text
 
@@ -100,9 +101,12 @@ data Resource = Resource {
 type SectionTag = Text -- section title
 data PaperMainText = Structured (Tree (SectionTag,Text)) | FlatHtml Text deriving Show
 
+
+emptyPaper :: Paper
 emptyPaper = 
   Paper "" "" "" Nothing Nothing emptyCitation [] [] [] Nothing [] Nothing "" Nothing Nothing SUndecidable
 
+emptyCitation :: Citation
 emptyCitation =
   Citation Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing [] Nothing Nothing
 
@@ -118,7 +122,7 @@ emptyWithUrl url = emptyPaper{
 -- (i.e. URL for the current implementation)
 -- supported can return different values even for the same url,
 -- depending on the access environment.
-data SupportLevel = SCitation | SAbstract | SFullText | SUndecidable deriving (Show,Eq)
+data SupportLevel = SCitation | SAbstract | SFullText | SUndecidable deriving (Show,Eq,Typeable)
 
 showMainText :: PaperMainText -> Text
 showMainText (FlatHtml txt) = txt

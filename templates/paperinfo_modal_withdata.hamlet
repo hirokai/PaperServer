@@ -25,7 +25,8 @@
               <td>URL
               <td>
                 <span #info-url>
-                  #{paperUrl paper}
+                  <a href="#{paperUrl paper}">
+                    #{paperUrl paper}
             <tr>
               <td>DOI
               <td>

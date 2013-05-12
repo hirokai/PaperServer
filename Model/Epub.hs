@@ -7,19 +7,19 @@ import Import hiding (Paper(..),Citation(..),Figure(..))
 
 import System.Process
 import System.Directory
-import System.IO.Error (try)
+import Control.Exception (try,IOException)
 import Data.Time
 
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Char8
+-- import qualified Data.ByteString.Char8
 import Data.String
 import qualified Data.Text as T
-import Data.Tree
+-- import Data.Tree
 import Data.Text.Encoding
 
-import Data.Maybe
-import Control.Monad (forM_,mapM_)
+-- import Data.Maybe
+-- import Control.Monad (forM_,mapM_)
 import Control.Lens
 
 import Text.Blaze
@@ -27,10 +27,10 @@ import Text.Blaze.XHtml5
 import Text.Blaze.XHtml5.Attributes
 import qualified Text.Blaze.XHtml5 as H
 import qualified Text.Blaze.XHtml5.Attributes as A
-import Text.Blaze.Renderer.Utf8
+import Text.Blaze.Html.Renderer.Utf8
 
-import Handler.Utils (getResourceId)
-import Model (Paper)
+-- import Handler.Utils (getResourceId)
+-- import Model (Paper)
 import Model.PaperReader
 import Model.PaperP (renderStructured)
 import Parser.Paper as P hiding (Paper,Url)
@@ -65,6 +65,7 @@ epubFromPaper pid paper = do
   -- system $ "rm -r '" ++ dir ++ "'" 
   return epubpath 
 
+mkNav :: PaperId -> P.Paper -> FilePath -> [(String, String)] -> IO ()
 mkNav pid paper dir figPaths = do
   let
     mkLi (name,path) = BS.concat ["<li><h2>",fromString name,"</h2><a epub:type='loi' href='",fromString path,"'>",fromString name,"</a></li>"]
@@ -157,7 +158,7 @@ mkFig fig dir = do
             `BL.append` renderHtml html
     htmlfile = "fig_"++num++".html"
   putStrLn $ T.unpack url
-  res <- try (copyFile imgPath (dir ++ "/OEBPS/" ++ figfile))
+  _ <- try (copyFile imgPath (dir ++ "/OEBPS/" ++ figfile)) :: IO (Either IOException ())
   BL.writeFile (dir++"/OEBPS/"++htmlfile) bs
   return (name,htmlfile)
   

@@ -20,8 +20,9 @@ module Parser.Publisher.PLoSONE (
    plosReader 
 ) where
 
-import Import
+import Parser.Import
 import Text.XML.Cursor as C
+import Text.XML (Document)
 import qualified Data.Map as M
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -51,6 +52,23 @@ _plosReader = defaultReader {
 
 plosReader = _plosReader {readerName=(\_ -> "PLoS")}
 
+_plosReader :: PaperReader
+plosReader :: PaperReader
+_supportedUrl :: PaperReader -> Text -> Maybe SupportLevel
+plosParsePaper :: PaperReader
+                        -> Url -> Text -> Text.XML.Document -> IO Paper
+
+hostDomain :: Text -> Text
+
+_title, _journal, _volume, _pageFrom, _pageTo, _articleType, _abstract
+    :: ReaderElement' (Maybe Text)
+
+_mainHtml :: ReaderElement' (Maybe PaperMainText)
+_doi :: ReaderElement' Text
+_year :: ReaderElement' (Maybe Int)
+_authors :: ReaderElement' [Text]
+_publisher :: ReaderElement' (Maybe Text)
+
 _supportedUrl _ url = boolToSupp $ any (`T.isPrefixOf` url) js
   where js = ["http://www.plosone.org/article/"
               , "http://www.ploscompbiol.org/article/"
@@ -75,7 +93,7 @@ getResources :: Text -> Cursor -> [Resource]
 getResources url_ cur =
   let
     cs = queryT [jq| img.inline-graphic |] cur
-    imgs = catMaybes $ map (headMay . attribute "src") cs
+    imgs = map (T.replace "&amp;" "&") $ catMaybes $ map (headMay . attribute "src") cs
     mkUrl url path = T.append (hostDomain url) path
     getPlosMime :: Text -> Text
     getPlosMime url

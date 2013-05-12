@@ -24,17 +24,17 @@ module Parser.Publisher.Nature2 (
     nature2AReader,nature2LReader,nature2OtherReader
 ) where
 
-import Import
+import Parser.Import
 import Text.XML
 import Text.XML.Cursor as C
-import Data.Maybe
+-- import Data.Maybe
 import Data.Text.Lazy  (toStrict)
-import Data.List
+-- import Data.List
 import qualified Data.Map as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import Control.Applicative((<|>),(<$>),(<*>))
-import Safe
+-- import Safe
 
 import Data.Tree
 import Control.Lens hiding (element)

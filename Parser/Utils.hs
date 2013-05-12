@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings,ImplicitPrelude #-}
 
 module Parser.Utils
   (
@@ -12,7 +12,6 @@ module Parser.Utils
     , dropmt
     , eitherMaybe
     , takeCurUntil
-    , mkFileName
     , mimeFromUrl
     , (<||>) 
   ) where
@@ -27,11 +26,11 @@ import qualified Data.Text.Lazy as TL
 import Text.XML.Selector
 import Text.XML.Scraping as S
 
-import qualified Data.ByteString.Lazy as BL
-import Data.Digest.Pure.SHA (sha256,showDigest)
-import Data.ByteString.Char8 (pack)
+-- import qualified Data.ByteString.Lazy as BL
+-- import Data.Digest.Pure.SHA (sha256,showDigest)
+-- import Data.ByteString.Char8 (pack)
 
-import Data.Maybe
+-- import Data.Maybe
 import Safe
 
 head' :: [a] -> [a]
@@ -95,15 +94,6 @@ mimeFromUrl url =
     Just "jpeg" -> "image/png"
     Just "gif" -> "image/gif"
     _ -> "unknown"   -- Stub
-
--- ToDo:
--- Following was copied from PaperServer. In the future, there should be some way to share this func between
--- two projects, Parser and PaperServer.
-
--- |Make a file name from url. This is used everywhere.
-mkFileName :: String -> String
-mkFileName = filter (/= ' ') . showDigest . sha256 . BL.fromChunks . (:[]) . pack
-
 
 infixl 3 <||>
 

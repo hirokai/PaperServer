@@ -1,6 +1,7 @@
 <head>
   <title> PaperServer
-  <link rel="stylesheet" type="text/css" href="/static/css/welcome.css">
+  <link rel="stylesheet" type="text/css" href="/static/css/welcome_mobile.css">
+  <meta name="viewport" content="width=600px, initial-scale=1, maximum-scale=1">
   <meta name="description" content="Blazingly fast web-based software for online journal article management.">
   <meta name="keywords" content="Reference manager, Haskell, Yesod">
 <body>
@@ -16,6 +17,23 @@
   <div .headline>
     Works on Google Chrome, Firefox, and Safari
   <div #container>
+    <div #registered>
+      <h3>
+        Already registered?
+      <div>
+        <a href=@{AuthR LoginR}>
+          <div #btn-login>
+            Log in
+    <div #newuser>
+      <h3>
+        New user?
+      <div>
+        <a href=@{SignUpR}>
+          <div #btn-signup>
+            Sign up
+      <div #auth-explain>
+        Authentication will be done by Mozilla Persona or Google ID. We only use your email address for the purpose of checking your identity, and we never have aceess to your password.
+    <div .cleardiv>
     <div #toppanel>
       <h3>
         Simple and unified UI for all journals
@@ -33,33 +51,6 @@
         You can import an existing library.
       <div #detail-link>
         <a href="detail">Read more...
-    <div #registered>
-      <h3>
-        Already registered?
-      <div>
-        <a href=@{StartR}>
-          <div #btn-login>
-            Log in
-      <div>
-        <a href="https://chrome.google.com/webstore/detail/paperserver/pdmapcooblalcfeoidacnahebeceeihh" alt="Download plugin">
-          <div #btn-download>
-            Download the plugin for Google Chrome
-    <div #newuser>
-      <h3>
-        New user?
-      <div>
-        <a href=@{SignUpR}>
-          <div #btn-signup>
-            Sign up
-      <div #auth-explain>
-        Authentication will be done by Mozilla Persona (recommended) or Google ID.
-      <div .detail>
-        We only use your email address for the purpose of checking your identity. We never have aceess to your password. How is Mozilla Persona a better way? Read these (
-        <a href="http://techcrunch.com/2012/09/27/mozillas-persona-login-system-is-now-in-beta-takes-on-openid-and-oauth/">
-          English,
-        <a href="http://japanese.engadget.com/2012/09/27/mozilla-persona/">
-          Japanese
-        ) articles.
     <div class="fb-like" data-href="http://paperserver.jp/welcome" data-send="false" data-width="300" data-show-faces="false">
   <div .footer>
     <ul>
@@ -76,3 +67,4 @@
       <li>
         <a href="mailto:#{webmasterEmail}">
           Contact the webmaster
+

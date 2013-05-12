@@ -21,12 +21,30 @@ module Parser.Publisher.AnnualRev (
   annualRevReader    
 ) where
 
-import Import
+import Parser.Import
 import Text.XML.Cursor as C
 import Parser.Utils
 import qualified Data.Text as T
 import Control.Applicative
 
+_annualRevReader :: PaperReader
+annualRevReader :: PaperReader
+
+_supportedUrl :: PaperReader -> T.Text -> Maybe SupportLevel
+
+_title, _journal, _volume, _pageFrom, _pageTo, _articleType, _abstract
+    :: ReaderElement' (Maybe Text)
+
+_mainHtml :: ReaderElement' (Maybe PaperMainText)
+_doi :: ReaderElement' Text
+_year :: ReaderElement' (Maybe Int)
+_authors :: ReaderElement' [Text]
+_publisher :: ReaderElement' (Maybe Text)
+
+_refs :: ReaderElement' [Reference]
+_figs :: ReaderElement' [Figure]
+
+ 
 _annualRevReader = defaultReader {
   supportedUrl = _supportedUrl,
   doi = anyLevel _doi,

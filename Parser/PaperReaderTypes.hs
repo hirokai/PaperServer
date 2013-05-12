@@ -1,12 +1,12 @@
 module Parser.PaperReaderTypes where
 
 -- import Import
-
+import Prelude
 import Text.XML
 import Data.Text (Text) 
 import qualified Data.Text as T (pack,unpack,concat,Text,replace,append,intercalate,splitOn,head)
 import Data.List as L
-import Data.Maybe
+-- import Data.Maybe
 import qualified Data.Map as M
 import qualified Data.ByteString as B
 import Parser.Paper
@@ -15,6 +15,7 @@ import Parser.Paper
 import Text.XML.Cursor(Cursor,fromDocument)
 
 type ReaderElement a = PaperReader -> SupportLevel -> Cursor -> a
+type ReaderElement' a = PaperReader -> Cursor -> a
 
 data PaperReader = PaperReader {
   supportedUrl :: PaperReader -> Url -> Maybe SupportLevel,
@@ -44,8 +45,8 @@ data PaperReader = PaperReader {
 -- title in Citation should be plain text
 -- title in Paper should be real title including superscript, greek letter, by html
 
-
 -- Make sure this defaultReader covers all fields. Compiler does not catch missing fields.
+defaultReader :: PaperReader
 defaultReader = PaperReader {
   supportedUrl = (\r u -> Nothing),
   supported = (\r url _ -> (supportedUrl r) r url),
@@ -117,6 +118,7 @@ onlyFullL f = (\r l cur ->
     _ -> [])
 
 -- ToDo: FIXME This quick fix should be removed at some point.
+boolToSupp :: Bool -> Maybe SupportLevel
 boolToSupp False = Nothing
 boolToSupp True = Just SFullText
 

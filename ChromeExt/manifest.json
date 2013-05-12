@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "PaperServer",
-  "version": "0.2.1",
+  "version": "0.3",
   "description": "Manage and organize journal articles.",
   "icons": { "128": "icon_128.png", "48": "icon_48.png" },
   "background": {
@@ -14,6 +14,7 @@
       "matches": [
          "http://pubs.acs.org/doi/*",
          "http://www.annualreviews.org/doi/*",
+         "http://link.springer.com/article/*",
          "http://www.nature.com/*",
          "http://www.sciencedirect.com/*",
          "http://www.sciencemag.org/content/*",
@@ -30,13 +31,15 @@
          "http://*.rupress.org/*",
          "http://www.jimmunol.org/*"
        ],
-			      "run_at": "document_start",
+			 "run_at": "document_start",
       "js": ["jquery-1.9.1.min.js", "common.js"]
     }
   ],
-  "permissions": ["tabs","notifications",
+  "permissions": [
+    "notifications",
     "http://paperserver.jp/*",
     "http://localhost/*",
+         "http://link.springer.com/article/*",
          "http://pubs.acs.org/doi/*",
          "http://www.annualreviews.org/doi/*",
          "http://www.nature.com/*",

@@ -11,13 +11,13 @@ module Parser.Publisher.Nature4 (
 ) where
 
 
-import Import
-import Data.Maybe
+import Parser.Import
+-- import Data.Maybe
 import Text.XML.Cursor
 import Parser.Utils
 import qualified Data.Text as T
 import Data.Text.Lazy (toStrict)
-import Control.Applicative ((<|>))
+-- import Control.Applicative ((<|>))
 
 import Parser.Publisher.NatureCommon
 

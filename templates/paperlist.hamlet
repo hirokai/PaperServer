@@ -33,8 +33,8 @@
        <button class="btn btn-primary">Save changes
    <div #hidden-forms .hidden style="display:none;">
      ^{onetimeTokenFW}
-   <script type="text/javascript" src=#{asset JQuery}></script>
-   <script type="text/javascript" src=#{asset W2UI}></script>
-   <script type="text/javascript" src=#{asset BootStrap}></script>
+   <script type="text/javascript" src=#{asset JQuery}>
+   <script type="text/javascript" src=#{asset W2UI}>
+   <script type="text/javascript" src=#{asset BootStrap}>
    <script src="/static/js/paperlist.js">
 

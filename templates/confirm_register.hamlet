@@ -17,5 +17,5 @@
         <input #okay type=submit value="OK">
       <div .cleardiv>
     <div #policy>
-      #{preEscapedText policyText}
+      #{preEscapedToHtml policyText}
 

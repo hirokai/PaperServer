@@ -1,8 +1,8 @@
-module Settings where
+module Parser.Settings where
 
-rootFolder :: String
-rootFolder = "/Users/username/PaperServer/Parser/"
-logFile = rootFolder ++ "parser.log"
+-- rootFolder :: String
+-- rootFolder = "/Users/hiroyuki/Documents/PaperServer/Parser/"
+-- logFile = rootFolder ++ "parser.log"
 
 
 -- ToDo:
