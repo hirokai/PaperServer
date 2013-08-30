@@ -1,3 +1,5 @@
+{-# LANGUAGE NoMonomorphismRestriction #-}
+
 -- Handler.Utils
 
 module Handler.Utils where
@@ -6,25 +8,15 @@ import Import
 
 import Yesod.Auth (maybeAuthId)
 
--- import Safe
--- import Data.Maybe
--- import Data.Text (Text)
 import qualified Data.Text as T
--- import qualified Data.ByteString.Lazy as BL
--- import Data.Bits.Utils (c2w8)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Digest.Pure.SHA (sha256,showDigest)
 import Data.ByteString.Lazy (fromChunks)
--- import Model.PaperReader as PR
--- import Model.Defs
 
 import Model.PaperMongo
 
--- import Database.MongoDB ((=:))
 import qualified Database.MongoDB as DB
--- import qualified Database.MongoDB.Query as DB
 import Data.Bson ((!?))
--- import qualified Data.Bson as Bson
 
 import Database.Persist.MongoDB
 
@@ -179,47 +171,7 @@ runRawMongo = do
   return ()
 -}
 
--- allOfUser :: (MonadBaseControl IO m, Monad m,Control.Monad.IO.Class.MonadIO m) => Text -> Action m [Bson.Document]
--- allSummariesOfUser :: Text -> m a [Document]
-summaryList = ["url" =: on,"citation" =: on,"doi" =: on,"tags" =: on,
-                             "available" =: on,"time_added" =: on]
-  where on = 1 :: Int
 
-summariesFilter email filt = do
-    let q = filt (DB.select ["user_email" =: email] "paper")
-    let qq = q{DB.project = summaryList}
-    liftIO $ print qq
-    cur <- DB.find qq
-    DB.rest cur
-
-allOfUser email = summariesFilter email id
-
-
-countMatching email filt = do
-  let q = filt (DB.select ["user_email" =: email] "paper") :: DB.Query
-  app <- getYesod
-  let dbconf = persistConfig app
-  pipe <- liftIO $ DB.runIOE $ DB.connect (DB.host $ T.unpack (mgHost dbconf))
-  eith <- DB.access pipe DB.ReadStaleOk "PaperServer" (DB.count q)
-  liftIO $ DB.close pipe
-  let len = case eith of
-              Left err -> 0
-              Right l -> l
-  return len
-
-
-
--- collectTags :: Text -> Document -> a
-collectTags email filt = do
-  let on = 1 :: Int
-  let q = (DB.select (filt ++ ["user_email" =: email]) "paper")
-  liftIO $ print q
-  cur <- DB.find q{DB.project = ["tags" =: on]}
-  ts <- DB.rest cur
-  return $ map convert ts
-  where
-    convert :: DB.Document -> [Text]
-    convert doc = fromMaybe [] $ doc !? "tags"
 
 
 historyPaper :: Text -> PaperId -> Handler [History]

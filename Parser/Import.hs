@@ -14,14 +14,11 @@ module Parser.Import
 , module Debug.Trace
 , module Data.Monoid
 , module Prelude
--- , head, tail
 ) where
 
 import Prelude hiding (head,tail)
 import Data.Maybe
 
--- import qualified Data.Text as Import.T
--- import qualified Data.Text.Lazy as LT
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 import Data.Text as Parser.Import (Text)

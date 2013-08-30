@@ -54,7 +54,7 @@ Citation json
     authors [Text]
     publisher Text Maybe
     type Text Maybe
-    deriving Eq Show Typeable
+    deriving Eq Show Typeable Data
 
     
 Figure json

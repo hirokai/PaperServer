@@ -5,6 +5,7 @@ module Parser.Utils
       head'
     , tail'
     , inner
+    , innert
     , render
     , takeb
     , dropm
@@ -16,8 +17,6 @@ module Parser.Utils
     , (<||>) 
   ) where
 
--- import Import
-
 import Text.XML
 import Text.XML.Cursor
 import Data.Text (Text)
@@ -26,11 +25,6 @@ import qualified Data.Text.Lazy as TL
 import Text.XML.Selector
 import Text.XML.Scraping as S
 
--- import qualified Data.ByteString.Lazy as BL
--- import Data.Digest.Pure.SHA (sha256,showDigest)
--- import Data.ByteString.Char8 (pack)
-
--- import Data.Maybe
 import Safe
 
 head' :: [a] -> [a]
@@ -53,21 +47,24 @@ dropm :: Int -> [a] -> Maybe [a]
 dropm n xs | length xs >= n = Just $ drop n xs
            | otherwise = Nothing
 
-takemt :: Int -> T.Text -> Maybe T.Text
+takemt :: Int -> Text -> Maybe Text
 takemt n xs | T.length xs >= n = Just $ T.take n xs
            | otherwise = Nothing
 
-dropmt :: Int -> T.Text -> Maybe T.Text
+dropmt :: Int -> Text -> Maybe Text
 dropmt n xs | T.length xs >= n = Just $ T.drop n xs
            | otherwise = Nothing
 
-inner :: [Cursor] -> Maybe T.Text
+inner :: [Cursor] -> Maybe Text
 inner = maybeText . TL.toStrict . S.innerHtml
 
-render :: [Node] -> Maybe T.Text
-render = maybeText . TL.toStrict . renderNodes
+innert :: [Cursor] -> Maybe Text
+innert = maybeText . TL.toStrict . S.innerText
 
--- drop' :: Int -> T.Text -> T.Text
+render :: [Node] -> Maybe Text
+render = maybeText . TL.toStrict . toHtml
+
+-- drop' :: Int -> Text -> Text
 -- drop' n s = if length s >= n then T.drop n s else ""
 
 
@@ -76,10 +73,10 @@ eitherMaybe (Left _) = Nothing
 eitherMaybe (Right x) = Just x 
 
 
-decodeNonLatin :: T.Text -> T.Text
+decodeNonLatin :: Text -> Text
 decodeNonLatin cs = foldl1 (.) (map f [("|[eacute]|","&#201;")]) $ cs
   where
-    f :: (T.Text,T.Text) -> (T.Text -> T.Text)
+    f :: (Text,Text) -> (Text -> Text)
     f (from,to) = T.replace from to
 
 

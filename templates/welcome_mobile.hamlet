@@ -24,6 +24,8 @@
         <a href=@{AuthR LoginR}>
           <div #btn-login>
             Log in
+        <a #btn-bookmarklet title="Upload paper" href=#{bookmarklet}>
+          Drag a bookmarklet to Browser toolbar.
     <div #newuser>
       <h3>
         New user?

@@ -1,8 +1,21 @@
 //background.js
 
+var log = function(d) {console.log(d);};
+
 var path_addurl = '/paper/add_url';
+var path_rawurl = '/paper/raw/'
+
+var hostRex = /^(http:\/\/.+?)\/(.+?)\//
 
 chrome.tabs.onUpdated.addListener(function(tabId, info, tab){
+  var m = tab.url.match(hostRex);
+  if(m && m.length >= 2){
+    var host = m[1];
+    var paper = true || (m[2] == "paper");
+    if(host == localStorage["hostDomain"] && paper){
+      chrome.tabs.executeScript(tabId,{code: "pluginEnabled = true; var parse = function(pid){chrome.extension.sendRequest({message: 'Reparse',id:pid});};", runAt: "document_idle"})
+    }    
+  }
 });
 
 chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
@@ -23,8 +36,10 @@ chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
   }else if (request.message == "NotSupported"){
     details.path = 'default.png';
     details.tabId = sender.tab.id;
+    details.title = 'This paper is not supported.';
     chrome.pageAction.setIcon(details);
     chrome.pageAction.show(sender.tab.id);			
+//    chrome.pageAction.setTitle(details);
   }else if (request.message == "FormattedNow"){
     details.path = 'formatted.png';
     details.tabId = sender.tab.id;
@@ -41,6 +56,27 @@ chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
     var id = request.paperId;
     console.log(request);
     setupImgFetching(host,id);
+  }else if (request.message == "FetchPubmed"){
+    var host = request.host;
+    var doi = request.paperDoi;
+    var pid = request.paperId;
+    setupPubmedFetching(host,pid,doi);
+  }else if (request.message == "DoesSupportParsingOnClient") {
+    parseSupported(request.url);
+  }else if (request.message == "ParseOnClient") {
+    var d = parseHtml(request.url,request.html);
+    sendResponse(d); 
+  }else if (request.message == "Reparse"){
+    var pid = request.id;
+    var url = request.url;
+    log(request);
+    if(parseSupported(url)){
+      $.get(localStorage["hostDomain"]+path_rawurl+pid,function(html){
+        parseHtml(url,html);
+      });
+    }else{
+      reparseOnServer(pid,sendResponse);
+    }
   }
 });
 
@@ -68,6 +104,26 @@ function setupImgFetching(host,pid){
       setTimeout(setupImgFetching,1000);
     }
   });
+}
+
+var path_uploadpubmed = '/pubmed/add'
+
+function setupPubmedFetching(host,pid,doi){
+  var url = "http://www.ncbi.nlm.nih.gov/pubmed?term="+encodeURI(doi)+"%5BLocation%20ID%5D&report=xml&format=text";
+    $.ajax({
+      url: url
+      , type: "GET"
+      , dataType: 'text'
+      , success:function(res){
+        var xml = res.replace('&lt;', '<')
+                   .replace('&gt;', '>');
+      console.log(xml);
+      var upload_url = host + path_uploadpubmed;
+      console.log(upload_url);
+      $.post(upload_url,{id: pid,doi:doi, xml: xml},function(res){
+        console.log(res);
+      });
+      }});
 }
 
 function fetchImages(host,pid,urls){
@@ -112,4 +168,14 @@ function addImgLoadListener(host,pid,img,i){
   });
 
 }
+
+function reparseOnServer(pid,callback){
+  log('(Parsing not possible on client, so) Reparsing on server...');
+  $.get(localStorage["hostDomain"]+'/paper/single_reparse',{id:pid},function(res){
+    callback(res);
+  });
+}
+
+
+
 

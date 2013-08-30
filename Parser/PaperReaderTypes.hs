@@ -1,16 +1,13 @@
 module Parser.PaperReaderTypes where
 
--- import Import
 import Prelude
 import Text.XML
 import Data.Text (Text) 
 import qualified Data.Text as T (pack,unpack,concat,Text,replace,append,intercalate,splitOn,head)
 import Data.List as L
--- import Data.Maybe
 import qualified Data.Map as M
 import qualified Data.ByteString as B
 import Parser.Paper
--- import qualified Paper as P
 
 import Text.XML.Cursor(Cursor,fromDocument)
 

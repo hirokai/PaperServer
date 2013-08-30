@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell, DeriveDataTypeable #-}
+
 module Model.Defs where
 
 import Prelude

@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, ImplicitPrelude #-}
+{-# LANGUAGE TemplateHaskell, ImplicitPrelude,DeriveDataTypeable #-}
 --
 -- Paper
 --
@@ -11,21 +11,15 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.ByteString (ByteString)
--- import qualified Data.ByteString as B
 import Data.Char (toLower)
 
--- import Data.Maybe
--- import Control.Applicative
 import Control.Lens hiding ((.=))
 import Data.Tree
 
 import Data.Aeson
 import Data.Aeson.TH
 
--- import Text.XML.Cursor
 import Text.XML.Selector (maybeText)
-
--- import Parser.Utils
 
 import Data.Typeable
 

@@ -1,15 +1,31 @@
 # Compile less
-lessc -x ./static/css/welcome.less > ./static/css/welcome.css
-lessc -x ./static/css/welcome_mobile.less > ./static/css/welcome_mobile.css
-lessc -x ./static/css/duplicated_user.less > ./static/css/duplicated_user.css
-lessc -x ./static/css/paperlist.less > ./static/css/paperlist.css
-lessc -x ./static/css/format_a.less > ./static/css/format_a.css
-lessc -x ./static/css/format_b.less > ./static/css/format_b.css
-lessc -x ./static/css/format_a_mobile.less > ./static/css/format_a_mobile.css
-lessc -x ./static/css/infoModal.less > ./static/css/infoModal.css
-lessc -x ./static/css/paperlist_mobile.less > ./static/css/paperlist_mobile.css
+cd static/css
+
+lessc -x welcome.less > welcome.css.temp
+yui-compressor -o welcome.css welcome.css.temp
+
+lessc -x duplicated_user.less > duplicated_user_compiled.css.temp
+yui-compressor -o duplicated_user.css duplicated_user_compiled.css.temp
+
+lessc -x paperlist.less > paperlist.css
+
+lessc -x format_a.less > format_a.css
+
+lessc -x format_b.less > format_b.css
+
+lessc -x format_a_mobile.less > format_a_mobile.css
+
+lessc -x infoModal.less > infoModal.css
+
+lessc -x paperlist_mobile.less > paperlist_mobile.css
+
+lessc -x activity.less > activity.css.temp
+yui-compressor -o activity.css activity.css.temp
+
+rm *.css.temp
 
 # Compile TypeScript
-cd ./static/js
-tsc paperlist.ts
-cd ../..
+#cd ../js
+#tsc paperlist.ts
+#cd ../..
+$ yui-compressor -o small_and_compiled_example.css compiled_example.css

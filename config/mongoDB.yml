@@ -1,7 +1,7 @@
 Default: &defaults
-  user: PaperServer
-  password: nopassword
-  host: localhost
+  user: *******
+  password: *******
+  host: paperserver.jp
   database: PaperServer
   connections: 10
 
@@ -20,5 +20,5 @@ Staging:
 Production:
   database: PaperServer
   connections: 100
-  host: localhost
+#  host: localhost
   <<: *defaults

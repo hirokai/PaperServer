@@ -4,17 +4,11 @@ module Parser.Formatter (
   , Format (..)
 ) where
 
--- import Parser.PaperReader
--- import System.Environment (getArgs)
 import Data.List
--- import Data.Maybe (isJust)
 import Control.Monad
--- import Control.Applicative
 import Parser.Import hiding (Url,toHtml)
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy as LB
--- import qualified Data.Text.IO as TIO
--- import Data.Aeson.Encode
 
 import Text.Blaze.Html5 hiding (map)
 import qualified Text.Blaze.Html5 as H

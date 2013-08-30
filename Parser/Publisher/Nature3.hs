@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 -----------------------------------------------------------------------------
 --
 -- Module      :  Model.PaperReader.Nature3
@@ -24,12 +26,9 @@ module Parser.Publisher.Nature3 (
 
 
 import Parser.Import
--- import Data.Maybe
 import Text.XML.Cursor
 import Parser.Utils
 import qualified Data.Text as T
-
--- import Control.Applicative ((<|>))
 
 import Parser.Publisher.NatureCommon
 
@@ -81,7 +80,7 @@ extCit2 :: (Int,Cursor) -> Reference
 extCit2 (num,c) = Reference (fromMaybe "N/A" (eid . node $ c))
                       (T.pack $ show num)
                       Nothing
-                      (maybeText . innerText . (:[]) $ c)
+                      (innert . (:[]) $ c)
                       url
   where
     url = do
@@ -95,9 +94,9 @@ extCit2 (num,c) = Reference (fromMaybe "N/A" (eid . node $ c))
 
 extCit1 :: Cursor -> Reference
 extCit1 c = Reference (fromMaybe "N/A" (td1a >>= headm . attribute "name"))
-                      (fromMaybe "N/A" (td1a >>= maybeText . innerText . (:[])))
+                      (fromMaybe "N/A" (td1a >>= innert . (:[])))
                       Nothing
-                      (td2 >>= maybeText . innerText . (:[]))
+                      (td2 >>= innert . (:[]))
                       url
   where
     td1a, td2 :: Maybe Cursor

@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes,TemplateHaskell #-}
+
 -- | Settings are centralized, as much as possible, into this file. This
 -- includes database connection settings, static file locations, etc.
 -- In addition, you can configure a number of different aspects of Yesod
@@ -114,11 +116,19 @@ appRootFolder, webmasterEmail, analyticsCode, hostname :: String
 
 -- I need to double check but appRootFolder should not have a space
 -- since this is passed as arg for command line program.
+
 appRootFolder = (T.unpack . T.strip . decodeUtf8) $(embedFile "config/approotfolder")
 hostname = (T.unpack . T.strip . decodeUtf8) $(embedFile "config/hostname")
 webmasterEmail = (T.unpack . T.strip . decodeUtf8) $(embedFile "config/webmaster_email")
 analyticsCode = (T.unpack . T.strip . decodeUtf8) $(embedFile "config/analytics_code")
 
+-- [mongoUser,mongoPassword] = (T.splitOn "/" . T.strip . decodeUtf8) $(embedFile "config/mongo_login")
+
+genericReaderTargets :: [Text]
+genericReaderTargets = (filter (not . T.null) . map T.strip . T.lines . decodeUtf8) $(embedFile "config/generic_reader_targets")
+
+bookmarklet :: Text
+bookmarklet = T.concat ["javascript:document.getElementsByTagName('body')%5B0%5D.appendChild(document.createElement('script')).setAttribute('src','http://",T.pack hostname,"/static/js/bookmarklet.js');"]
 
 epubTemplateFolder :: String
 epubSourceFolder :: String
@@ -148,7 +158,8 @@ resourceRootFolder = appRootFolder ++ "data/image/"
 
 
 -- JS and CSS URLs
-data Asset = BootStrap | JQuery | JQueryR | W2UI | BootStrapC | JQueryC | W2UIC | JQMobile | JQMobileC
+data Asset = BootStrap | JQuery | JQueryR | W2UI | BootStrapC | JQueryC | W2UIC | JQMobile | JQMobileC |
+                Underscore
 asset :: Asset -> Text
 asset BootStrap = "/static/js/lib/bootstrap.min.js"
 asset JQueryR = "http://code.jquery.com/jquery-1.9.1.min.js"
@@ -159,4 +170,5 @@ asset JQueryC = "/static/css/lib/jquery.min.css"
 asset W2UIC = "/static/css/lib/w2ui-1.1.min.css"
 asset JQMobile = "http://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js"
 asset JQMobileC = "http://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css"
+asset Underscore = "/static/js/lib/underscore-min.js"
 -- asset _ = error "Not found"

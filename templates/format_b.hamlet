@@ -20,7 +20,7 @@
       <div .navbar .navbar-fixed-top>
         <div .navbar-inner>
           <a .brand" href="#">Papers
-          <ul .nav">
+          <ul .nav>
             <li>
               <a href="/list">List
             <li .active>

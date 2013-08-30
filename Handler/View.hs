@@ -1,38 +1,15 @@
-{-# LANGUAGE DoAndIfThenElse #-}
--- Handler.View
-
 module Handler.View where
 
 import Import
--- import qualified Data.List as L
-
--- import qualified Data.Text as T
--- import Data.Text.Lazy.IO as TLIO
-
--- import Data.Maybe
--- import Control.Applicative ((<$>))
--- import Control.Lens
-
 import Data.Time.Clock
--- import qualified Text.Blaze.Html5 as H
--- import Text.Blaze.Renderer.Text (renderHtml)
--- import Text.Blaze.Internal (preEscapedText)
--- import Text.Blaze.Html (preEscapedToHtml)
 
--- import Yesod.Auth
-
--- import Model.PaperReader as PR
 import Model.Epub
 import Handler.Utils
--- import Handler.Widget
--- import Handler.Paper
 import Model.PaperP
 import Handler.Render
+import Model.PaperMongo (getRawHtmlById)
 
--- import Text.Hamlet
--- import System.Directory
-
--- import qualified Parser.Paper as P 
+import Text.Blaze.Html (preEscapedToHtml)
 
 --
 -- Handlers for sending / showing the paper. 
@@ -43,6 +20,9 @@ getPaperRa paperId = renderPaper paperId FormatA
 
 getPaperRb :: PaperId -> Handler TypedContent
 getPaperRb paperId = renderPaper paperId FormatB
+
+getPaperRc :: PaperId -> Handler TypedContent
+getPaperRc paperId = renderPaper paperId FormatC
 
 getPaperTabletRa :: PaperId -> Handler TypedContent
 getPaperTabletRa paperId = renderPaper paperId FormatATablet
@@ -56,6 +36,7 @@ getMobilePaperRa paperId = renderPaper paperId FormatAMobile
 getMobilePaperRb :: PaperId -> Handler TypedContent
 getMobilePaperRb paperId = renderPaper paperId FormatBMobile
 
+getDoiPaperR :: Handler TypedContent
 getDoiPaperR = notFound
 {-
 getDoiPaperR :: String -> String -> Handler TypedContent
@@ -73,12 +54,10 @@ getDoiPaperR pub doc = do
 getRawHtmlR :: PaperId -> Handler TypedContent
 getRawHtmlR paperId = do
   email <- requireAuthId'
-  paper <- runDB $ get404 paperId
-  if Just email == paperUserEmail paper then do
-    let html = paperOriginalHtml paper
-    return $ toTypedContent html
-  else
-    notFound
+  mhtml <- getRawHtmlById email paperId
+  case mhtml of
+    Just html -> return $ toTypedContent $ preEscapedToHtml html
+    Nothing -> notFound
 
 getEpubPaperR :: PaperId -> Handler ()
 getEpubPaperR pid = do

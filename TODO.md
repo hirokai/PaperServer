@@ -1,30 +1,67 @@
-# To Fix
-* Set up a shell script to make temporary folders, parser excutable, etc.
-* ���C�A�E�g�������BJS�̓ǂݍ��݂����������\�� addJSLibraries�čl�B
+# 不具合
+* Bookmarkletから開かれるウィンドウが大きすぎる。
+* 413 Too Largeの解消：例http://pubs.acs.org/doi/full/10.1021/cr3000994
 
-# ToDo
+# 機能追加
 
+## 優先度高
+* list UIの複数選択 
+  * 削除
+  * reparse
+  * export citation
+* Activity logの検索・フィルター機能
 * Backup of the database
-** JSON export
-** Binary export
-* Epub export with figures and refs
-* Activity log
+ * JSON export
+ * Binary export
+
+## 優先度中
+* Import of database
+ * Mendeley
+
+## 優先度低
+* Epub exportの完成度を高める。
+
 * Export of styled citation text (for writing a manuscript, slides, etc.)
+
 * PDF Viewing
+
 * More complete html parsing engine
-** Especially for ACS journals
 
+* 同じ論文の複数のエントリを自動でマージする。
+* 論文への（短いタグではなく文章としての）コメント追加機能。
 
-* Stub��ToDo��T���R�}���h�F find . -name "*.hs" | xargs egrep -i "(stub|todo)"
+* PDFからのテクスト抽出。
+
+* 論文を取得した時間をチャンクに分けることで、トピック分類する。（同じ時間帯に探した一連の論文は、同じテーマに関連する可能性が高い。）
+
+* 研究者の論文リスト（Pubmed、あるいは一般のウェブページ）から総ての書誌情報をインポートする。
+
+* ユーザー登録しないで使えるデモサイトの構築。フリーの論文を使う。PLoS, BMC Bioinformatics. ACS Author's choice
+
 * Add log for fetching the data.
-* Stop fetching images by default.
-*   Or use images uploaded from the browser client.
-* Add vim-like keyboard opearation
-* Add functions to manage papers by the added date.
-* Make a timeline view for adding papers.
-* �K�w�̃t�H���_�r���[�����ɕ\���ł���悤�ɂ���B�t���b�g�ȃ^�O�r���[�ƃc���[�r���[�̐؂�ւ�
-* �t�H���_�\���͊����̃^�O���玩�R�ɍ���悤�ɂ���B�����̃v���t�@�C��
-* ������Đ؂�ւ��ł���悤�ɂ���B
-* references��[[Reference]]�Ȃ̂�[Reference]�ɂ��A���O�i1a,1b�Ȃǁj����K�w�����A���邢�͕ʂ̍\����ێ����邱�ƂŊK�w���L������B���ۖ��K�w��K�v�Ƃ����ʂ͂��܂�Ȃ��B�{��������̈��p��\�������������炢�B
-* abstract��mainhtml��Script�^�O��K���폜����BXSS�΍�B
-* 413 Too Large�̉����F��http://pubs.acs.org/doi/full/10.1021/cr3000994
+
+* 階層のフォルダビューを左に表示できるようにする。フラットなタグビューとツリービューの切り替え
+* フォルダ構成は既存のタグから自由に作れるようにする。複数のプロファイルを作って切り替えできるようにする。
+
+* referencesの階層構造の保持。
+* referencesの本文からのジャンプの対応。
+
+
+# 設計
+
+
+* パーシングの構造
+ * Structure definition by external file. That way, no compiling needed.
+ * RPCなどを使った、別プロセスでのパーズ。キューを作って順次解析させる。
+* PubmedのAPIの利用の拡充。referenceなども取れる。
+  *その他のDBも検討。
+    * PMCは前文が取れる。
+
+* backgridjsを使って、/list のデータ管理をbackboneと組み合わせて使う。
+
+* Mongoのレプリケーションを作る。
+
+# その他メモ
+
+* StubとToDoを探すコマンド： find . -name "*.hs" | xargs egrep -i "(stub|todo)"
+

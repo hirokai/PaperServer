@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 --
 -- Nature4.hs
 --
@@ -12,12 +14,10 @@ module Parser.Publisher.Nature4 (
 
 
 import Parser.Import
--- import Data.Maybe
 import Text.XML.Cursor
 import Parser.Utils
 import qualified Data.Text as T
 import Data.Text.Lazy (toStrict)
--- import Control.Applicative ((<|>))
 
 import Parser.Publisher.NatureCommon
 
@@ -51,6 +51,6 @@ _supported r url cur = boolToSupp $ isJust (_supportedUrl r url) && (not . null 
 
 _abstract _ c = (inner $ queryT [jq| span.articletext > b |] c)
 
-_mainHtml _ c = fmap FlatHtml $ maybeText $ toStrict $ renderNodes $ removeQueries [" > b"] $ map node $ queryT [jq| span.articletext |] c
+_mainHtml _ c = fmap FlatHtml $ render $ removeQueries [" > b"] $ map node $ queryT [jq| span.articletext |] c
 
 

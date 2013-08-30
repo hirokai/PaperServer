@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 -----------------------------------------------------------------------------
 --
 -- Module      :  Model.PaperReader.Wiley
@@ -26,7 +28,6 @@ import qualified Data.Text as T
 import Data.Text.Lazy (toStrict)
 import Data.Text.Read
 
--- import Data.Maybe
 import Control.Applicative ((<$>),(<*>))
 import Control.Monad
 
@@ -122,14 +123,14 @@ mkRef cur = Reference
       (eid . node) cc
     txt = do
       cc <- citcur
-      maybeText $ innerText [cc]
-    num = innerText $ queryT [jq| span.bullet |] cur
+      maybeText $ toStrict $ innerText [cc]
+    num = toStrict . innerText $ queryT [jq| span.bullet |] cur
     cit = Just $ emptyCitation{_citationAuthors=authors}
-    authors = fromMaybe [] $ fmap (map (innerTextN . node) . queryT [jq| span.author |]) citcur
+    authors = fromMaybe [] $ fmap (map (toStrict . innerText) . queryT [jq| span.author |]) citcur
     year = do
         cc <- citcur
         h <- headm $ queryT [jq| span.pubYear |] cc
-        val <- (fmap snd . eitherMaybe . decimal . innerTextN . node) h
+        val <- (fmap snd . eitherMaybe . decimal . toStrict . innerText) h
         return val
 
 

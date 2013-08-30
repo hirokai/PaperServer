@@ -1,7 +1,7 @@
 -- Handler.Paper
 
 
-{-# LANGUAGE QuasiQuotes, ScopedTypeVariables #-}
+{-# LANGUAGE QuasiQuotes, ScopedTypeVariables,TemplateHaskell #-}
 
 module Handler.PaperList where
 
@@ -10,34 +10,40 @@ import Import
 import Yesod.Auth -- (requireAuthId')
 
 import System.FilePath
--- import System.Random
 import Data.UUID.V4
 
--- import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
--- import qualified Data.MessagePack as MP
--- import qualified Data.Text as T
--- import qualified Data.Text.IO as TIO
--- import Safe
 
 import Handler.Utils
 import Handler.Widget
 import Handler.Form
--- import Model.PaperReader
 import Model.PaperMongo
 
--- import Data.Aeson hiding (object)
-
--- import Data.Maybe
--- import Control.Applicative
--- import Control.Monad
 import Data.List (nub)
 
-getPaperListR :: Handler RepHtml
+{-
+getPaperListR :: Handler Html
 getPaperListR = do
   -- email <- requireAuthId'
   (onetimeTokenFW, enc) <- generateFormPost onetimeTokenF
   nowrapLayout $(widgetFile "paperlist")
+-}
+
+-- for Hastache
+import Text.Hastache 
+import Text.Hastache.Context 
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy.Char8 as BL8 
+import Data.Data 
+import Data.Generics
+
+getPaperListR :: Handler TypedContent
+getPaperListR = do
+  email <- requireAuthId'
+  template <- liftIO $ BS.readFile "templates/list.mastache.html"
+  res <- liftIO $ hastacheStr defaultConfig template
+        (mkGenericContext ([]::[Int])) 
+  return $ toTypedContent ("text/html" :: ByteString, toContent res)
 
 getPaperHistory :: [Entity Paper] -> Handler [(PaperId,Paper,Int,[History])]
 getPaperHistory res = do
@@ -58,19 +64,19 @@ getListAllTagsR = do
     json = toJSON (map mkTagJson (nub $ concat alltags))
   return $ toTypedContent json
 
-getPaperListTabletR :: Handler RepHtml
+getPaperListTabletR :: Handler Html
 getPaperListTabletR = do
   email <- requireAuthId'
   (onetimeTokenFW, enc) <- generateFormPost onetimeTokenF
   nowrapLayout $(widgetFile "paperlist_tablet")
 
-getPaperListMobileR :: Handler RepHtml
+getPaperListMobileR :: Handler Html
 getPaperListMobileR = do
   email <- requireAuthId'
   (onetimeTokenFW, enc) <- generateFormPost onetimeTokenF
   nowrapLayout $(widgetFile "paperlist_mobile")
 
-getPaperListWithJsonR :: Handler RepHtml
+getPaperListWithJsonR :: Handler Html
 getPaperListWithJsonR = do
   email <- requireAuthId'
   let userid = email
@@ -105,7 +111,7 @@ getLibraryImportR = do
   <input type=submit>
 |]
 
-postLibraryImportSubmitR :: Handler RepHtml
+postLibraryImportSubmitR :: Handler Html
 postLibraryImportSubmitR = do
   email <-requireAuthId'
   ((result, formWidget), formEnctype) <- runFormPost fileUploadForm

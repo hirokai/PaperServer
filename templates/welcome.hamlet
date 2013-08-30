@@ -44,6 +44,10 @@
         <a href="https://chrome.google.com/webstore/detail/paperserver/pdmapcooblalcfeoidacnahebeceeihh" alt="Download plugin">
           <div #btn-download>
             Download the plugin for Google Chrome
+        <div #box-or>
+          Or
+        <a #btn-bookmarklet title="Upload paper" href=#{bookmarklet}>
+          Drag a bookmarklet to Browser toolbar.
     <div #newuser>
       <h3>
         New user?

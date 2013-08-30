@@ -1,4 +1,4 @@
-{-# LANGUAGE DoAndIfThenElse #-}
+{-# LANGUAGE DoAndIfThenElse,TemplateHaskell #-}
 --
 -- Handler.PaperListW2UI
 -- Returns JSON that is specific to w2ui library.
@@ -7,49 +7,33 @@
 
 module Handler.PaperListW2UI where
 
+
 import Import
-
--- import Yesod.Auth -- (requireAuthId)
-
--- import System.FilePath
--- import System.Random
-
--- import qualified Data.ByteString as B
--- import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
--- import qualified Data.Text.IO as TIO
 import Safe
 
 import Handler.Utils
--- import Handler.Widget
--- import Handler.Form
 import Model.PaperReader
 import Model.PaperMongo
--- import Model.Defs
-
--- import Data.Aeson hiding (object)
-
--- import Data.List (foldl1)
--- import Data.Maybe
--- import Control.Applicative
--- import Control.Monad
--- import Data.List (sortBy,nub)
 
 import Database.MongoDB ((=:))
 import qualified Database.MongoDB as DB
--- import qualified Database.MongoDB.Query as DB
 
 import Data.Bson ((!?))
 import qualified Data.Bson as Bson
+import qualified Data.HashMap.Strict as HM
+import Data.Attoparsec.Number (Number(..))
 
-import Data.Time
-
+-- Returns all papers
 getPaperListJsonR :: Handler TypedContent
-getPaperListJsonR = sendGridJson Nothing
+getPaperListJsonR = do 
+  email <- requireAuthId'
+  sums <- getSummariesByQuery (DB.select ["user_email" =: email] "paper"){DB.project = summaryList}
+  return $ toTypedContent $ toJSON sums
 
 
 -- This returns JSON for w2ui library.
--- ToDo: parse the arguments correctly.
+-- FIXME: parse the arguments correctly.
 postPaperListJsonR = do
   email <- requireAuthId'
   body <- runRequestBody
@@ -97,72 +81,6 @@ summaryFromDB email = do
     mkSummary bson = Nothing
 
 -}
-data PaperSummary = PaperSummary {
-  pTitle :: Text,
-  pCit :: Citation,
-  pId :: Text,
-  pDoi :: Text,
-  pTags :: [Text],
-  pAvail :: ResourceAvailability,
-  pAddedDate :: UTCTime
-} deriving (Show,Eq)
-
-instance ToJSON PaperSummary where
-  toJSON (PaperSummary title cit pid doi tags avail date)
-    = object ["citation" .= cit,"tags" .= tags]  -- Stub!!
-
-mkPSVals (PaperSummary t c i d tags avail date) =
-  let
-    --Stub!!
-  in
-  ["citation" .= c
-   , "cittext" .= mkCitHtml c 
-   , "available" .= avail
-   , "tags" .= tags
-   , "id" .= i
-   , "date" .= date]  -- Stub!!
-
-fromBson :: Bson.Document -> Maybe PaperSummary
-fromBson doc =
-  let
-    fromObjId :: Bson.ObjectId -> Text
-    fromObjId oid = T.pack $ show oid
-    mcit =
-      let
-        d = doc !? "citation.doi"
-        u = doc !? "citation.url"
-        t = doc !? "citation.title"
-        j = doc !? "citation.journal"
-        y = doc !? "citation.year"
-        v = doc !? "citation.volume"
-        pf = doc !? "citation.pageFrom"
-        pt = doc !? "citation.pageTo"
-        as = fromMaybe [] $ doc !? "citation.authors"
-        pub = doc !? "citation.publisher"
-        typ = doc !? "citation.type"
-      in
-        Just $ Citation d u t j y v pf pt as pub typ 
-    mavail = do
-      txt <- doc !? "available"
-      return $ f (T.splitOn "," txt)
-        where
-          f ts = ResourceAvailability
-                   ("cit" `elem` ts) 
-                   ("abs" `elem` ts) 
-                   ("full" `elem` ts) 
-                   ("fig" `elem` ts) 
-                   ("ref" `elem` ts) 
-                   ("toc" `elem` ts)
-    mdate = doc !? "time_added"
-  in
-  PaperSummary
-    <$> doc !? "citation.title"
-    <*> mcit
-    <*> fmap fromObjId (doc !? "_id")
-    <*> doc !? "doi"
-    <*> doc !? "tags"
-    <*> mavail
-    <*> mdate
 
 -- ToDo: Make this clearer.
 -- Fcuntions from Persistent modules may be incompetent for my purpose.
@@ -173,18 +91,21 @@ fromBson doc =
 sendGridJson :: Maybe W2UIGridReq -> Handler TypedContent
 sendGridJson mreq = do
   email <- requireAuthId'
-  total <- countMatching email (mkSearch mreq)
-  sumsb <- queryRawMongo $ summariesFilter email (mkSearch mreq . mkFilter mreq)
-  let sums = catMaybes $ map fromBson sumsb
+  total <- countPapersByQuery (mkSearch mreq (defaultQuery email))
+  sums <- getSummariesByQuery (mkSearch mreq . mkFilter mreq $ defaultQuery email)
   let per_page = maybe 50 limit mreq
   let off = maybe 0 offset mreq 
   let
-    addRecId :: Int -> [(Text,Value)] -> Value
-    addRecId n ps = object (["recid" .= n] ++ ps)
+    addRecId :: Int -> PaperSummary -> Value
+    addRecId n sum =
+      let
+        (Object obj) = toJSON sum
+      in
+        Object $ HM.insert "recid" (Number (I (fromIntegral n))) obj
     json = object [
                 "total" .= total
                 , "page" .= (off `div` per_page)  --Stub: 20 should be customizable.
-                , "records" .= (zipWith addRecId [off+1..] $ map mkPSVals sums)
+                , "records" .= (zipWith addRecId [off+1..] sums)
                 ]
   return $ toTypedContent json
 

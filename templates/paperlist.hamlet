@@ -33,6 +33,7 @@
        <button class="btn btn-primary">Save changes
    <div #hidden-forms .hidden style="display:none;">
      ^{onetimeTokenFW}
+   <script type="text/javascript" src=#{asset Underscore}>
    <script type="text/javascript" src=#{asset JQuery}>
    <script type="text/javascript" src=#{asset W2UI}>
    <script type="text/javascript" src=#{asset BootStrap}>

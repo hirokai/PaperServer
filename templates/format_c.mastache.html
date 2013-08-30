@@ -1,0 +1,106 @@
+<html>
+<head>
+{{#citation}}
+    <title>{{ctitle}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-wip/css/bootstrap.min.css">
+     <link rel="stylesheet" type="text/css" href="/static/css/format_c.css">
+    <meta name='dc.Publisher' content={{cpublisher}}>
+    <meta name="original_url" content={{curl}}>
+    <meta name="doi" content={{cdoi}}>
+    <meta name="paper_id" content={{paperId}}>
+{{/citation}}
+</head>
+<body  class='inverted' data-publisher={{citation.cpublisher}} data-parser=#{fromMaybe "NA" parser}>
+<div class="navbar navbar-fixed-top hidden-sm">
+  <a class="navbar-brand hidden-sm" href="#">PaperServer</a>
+  <ul class="nav navbar-nav">
+    <li class="active"><a href="#">Reader</a></li>
+    <li><a href="/list">List</a></li>
+    <li><a href="/activity#timeline">Stats</a></li>
+  </ul>
+  <p class='navbar-text'>
+   {{mcitHtml}}
+   {{cit}} 
+  </p>
+  <button type="button" class="btn btn-default" data-toggle="button">B/W</button>
+<div class="btn-group" id='menu'>
+  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+    Action <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu pull-right">
+    <li><a href="{{citation.curl}}">Go to original</a></li>
+    <li class="divider"></li>
+    <li><a href="#" id='action_reparse'>Reparse</a></li>
+    <li><a href="#" id='action_delete'>Delete</a></li>
+    <li class="divider"></li>
+    <li><a href='/auth/logout'>Logout</a></li>
+  </ul>
+  </div>
+  </div>
+
+<div class='container'>
+
+  <div class='row' id='maincontent'>
+    <div class='col-lg-2 visible-lg'>
+      <ul id='tocpanel'>
+      </ul>
+    </div>
+    <div class='col-lg-8'>
+      <h2 class='title'>{{title}}</h2>
+      {{mcitHtml}}
+      {{#citation.cauthors}}
+      <ul class='authors'>
+        <li>{{.}}</li>
+      </ul>
+      {{/#citation.authors}}
+    </div>
+    
+  </div>  
+  <div class='row'>
+
+    <div class='abstract col-lg-8 col-offset-2' id='abstract'>
+    <h3>Abstract</h3>
+      {{abstract}}
+    </div>
+  </div>  
+  <div class='row'>
+    <div class='maintext col-lg-8 col-offset-2'>
+     {{mainHtml}}
+   </div>  
+ </div>
+ </div>
+
+  <!-- Button trigger modal -->
+  <a data-toggle="modal" href="#myModal" class="btn btn-primary btn-lg">Launch demo modal</a>
+
+  <!-- Modal -->
+  <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 class="modal-title">Modal title</h4>
+        </div>
+        <div class="modal-body">
+          ...
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary">Save changes</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+
+  
+
+    <script src="http://codeorigin.jquery.com/jquery-1.10.2.min.js"></script> 
+<script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0-wip/js/bootstrap.min.js"></script>
+    <script src='/static/js/lib/underscore-min.js'></script>
+    <script src='/static/js/format_c.js'></script>
+
+</body>
+</html>
+

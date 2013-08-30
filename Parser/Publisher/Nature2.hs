@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 -----------------------------------------------------------------------------
 --
 -- Module      :  Model.PaperReader.Nature2
@@ -27,14 +29,11 @@ module Parser.Publisher.Nature2 (
 import Parser.Import
 import Text.XML
 import Text.XML.Cursor as C
--- import Data.Maybe
 import Data.Text.Lazy  (toStrict)
--- import Data.List
 import qualified Data.Map as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import Control.Applicative((<|>),(<$>),(<*>))
--- import Safe
 
 import Data.Tree
 import Control.Lens hiding (element)
@@ -120,10 +119,11 @@ _supportedA r url c = boolToSupp $ (isJust $ _supportedUrl r url) && isJust (_ti
                         && _articleType r c `elem` map Just ["Article","Review","Protocol"]
 
 
-_supportedL r url c = boolToSupp $ (isJust $ _supportedUrl r url) && _articleType r c `elem` map Just ["Letter","Brief Communication"]
+_supportedL r url c = boolToSupp $ (isJust $ _supportedUrl r url)
+                        && _articleType r c `elem` map Just ["Letter","Brief Communication"]
 _supportedOther r url c
   = boolToSupp $ (isJust $ _supportedUrl r url) &&
-      _articleType r c `elem` (map Just ["Research Highlights","Editorial","News and Views","Retraction"])
+      _articleType r c `elem` (map Just ["Research Highlights","Editorial","News and Views","Retraction","Commentary","Perspective"])
           -- Stub: add more.
 -- ToDo: Seems "News and Views" needs special treatment? Test 10.1038/nsmb.2552
 
@@ -143,7 +143,7 @@ getSections :: Cursor -> Maybe SectionInfo
 getSections doc =
   let
     sec1 = queryT [jq| section h1.section-heading |] doc
-    sec1_titles_str = map (innerText . (:[])) sec1
+    sec1_titles_str = map (toStrict . innerText . (:[])) sec1
   in
     case sec1_titles_str of
       [] -> Nothing
@@ -157,12 +157,14 @@ mkSection (title,cur) = Node (Section title (fromMaybe "" $ eid $ node cur)) []
 
 
 _mainHtmlL,_mainHtmlA :: PaperReader -> Cursor -> Maybe PaperMainText
-_mainHtmlL _ cursor = fmap FlatHtml . maybeText . T.strip . toStrict .
-                        renderNodes . map replaceLinks . nofignav . extractMainL . map node $ (cursor $// element "section")
+_mainHtmlL _ cursor = fmap (FlatHtml . T.strip) . render . map replaceLinks . nofignav . extractMainL . map node $ (cursor $// element "section")
 
 _mainHtmlA _ cursor = fmap FlatHtml $ (render . map replaceLinks . nofignav . nolater . noabstract . map node) $ (cursor $// element "section")
 
-_mainHtmlOther r cur = _mainHtmlL r cur <|> (fmap FlatHtml $ inner $ queryT [jq| #articlebody |] cur)
+-- _mainHtmlOther r cur = _mainHtmlL r cur <|> (fmap FlatHtml $ inner $ queryT [jq| #articlebody |] cur)
+_mainHtmlOther r cur = _mainHtmlL r cur
+                          <|> (fmap FlatHtml $ inner $ queryT [jq| #articlebody |] cur)
+                          <|> (fmap FlatHtml $ inner $ queryT [jq| article > section |] cur)
 
 {-
 subLink :: Node->Node
@@ -271,7 +273,7 @@ nolater ns = fst $ break f ns
 
 tocA,tocL :: PaperReader -> Cursor -> Maybe T.Text
 tocL _ _ = Nothing
-tocA _ = Just . T.intercalate "::" . map (innerTextN . node) . nav
+tocA _ = Just . T.intercalate "::" . catMaybes . map (maybeText . toStrict . innerText) . nav
   where
     nav = queryT [jq| section nav li |]
 
@@ -306,7 +308,7 @@ _refs _ cur =
             (url n)
     refid as = fromMaybe "" (M.lookup "id" as)
     refname as = T.drop 3 (refid as)
-    txt cs = T.strip $ T.concat $ map innerTextN $ takeWhile g cs
+    txt cs = T.strip $ T.concat $ map (toStrict . innerText) $ takeWhile g cs
     g (NodeElement (Element name as cs)) = name /= "ul"
     g _ = True
     url n = let cs = fromNode n $// element "a" >=> attribute "href" in
@@ -329,7 +331,7 @@ refs2 cur =
         cit = Just $ mkCit2 link c
         cittxt = do
           h <- (headMay . removeQuery "ul.has-ref-links") [node c]
-          (maybeText . T.strip . innerTextN ) h
+          return $ T.strip $ toStrict $ innerText $ h
         uls = queryT [jq| ul.has-ref-links |] c
         link = do
           ul <- uls `atMay` (length uls-2)
@@ -339,7 +341,8 @@ refs2 cur =
         Reference id name cit cittxt link
     mkCit2 url c =
       let
-        takehead  = fmap (innerTextN . node) . headMay
+        takehead :: [Cursor] -> Maybe Text
+        takehead  cs = headMay cs >>= (maybeText . toStrict . innerText)
         doi       = Nothing
         title     = takehead $ queryT [jq| span.title |] c
         journal   = takehead $ queryT [jq| span.source-title |] c
@@ -347,7 +350,7 @@ refs2 cur =
         volume    = takehead $ queryT [jq| span.volume |] c
         pagefrom  = takehead $ queryT [jq| span.start-page |] c
         pageto    = takehead $ queryT [jq| span.end-page |] c
-        authors   = map (innerTextN . node) $ queryT [jq| span.author |] c
+        authors   = map (toStrict . innerText) $ queryT [jq| span.author |] c
         publisher = Nothing
         type_     = Nothing
       in

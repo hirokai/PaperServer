@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 -----------------------------------------------------------------------------
 --
 -- Module      :  Model.PaperReader.NatureL
@@ -27,15 +29,15 @@ module Parser.Publisher.NatureL (
 import Parser.Import
 import Text.XML
 import Text.XML.Cursor as C
--- import Data.Maybe
 import Data.List
--- import Control.Applicative
+import Control.Applicative
 import qualified Data.Map as M
 import Parser.Utils
 
 import Parser.Publisher.NatureCommon (_publisher,_pageFrom,_pageTo,_volume,_authors,_year)
 
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 
 natureLReader :: PaperReader
 natureLReader = defaultReader {
@@ -73,12 +75,14 @@ _abstract _ cur = render $ take 1 $ map node $ (queryT [jq| #first-paragraph |] 
 
 
 -- These are different from ones in NatureCommon
-_doi _ = innerText . queryT [jq| dd.doi |]
+_doi _ = TL.toStrict . innerText . queryT [jq| dd.doi |]
 
 _journal _ cursor = Just $ head $ map (T.strip . head) $ filter (\x -> not $ null x) $ cursor $// element "p" &| attributeIs "class" "article-type" &.// content
 
-_articleType _ cursor = headm $ map (T.strip . last) $ filter (\x -> not $ null x) $
-                      cursor $// element "p" &| attributeIs "class" "article-type" &.// content
+_articleType _ cursor =
+  (headMay $ getMeta "prism.section" cursor)
+  <|> (headm $ map (T.strip . last) $ filter (\x -> not $ null x) $
+                      cursor $// element "p" &| attributeIs "class" "article-type" &.// content)
 -- --------
 --
 --
@@ -90,7 +94,7 @@ _refs _ cur = map r ns
       r n@(NodeElement (Element name as cs)) = Reference (refid as) (refname as)(Just emptyCitation) (Just (txt cs)) (url n)
       refid as = fromMaybe "" (M.lookup "id" as)
       refname as = T.drop 3 (refid as)
-      txt cs = T.strip $ T.concat $ map innerTextN $ takeWhile g cs
+      txt cs = T.strip $ TL.toStrict $ innerText $ takeWhile g cs
       g (NodeElement (Element name as cs)) = name /= "ul"
       g _ = True
       url n = let cs = fromNode n $// element "a" >=> attribute "href" in

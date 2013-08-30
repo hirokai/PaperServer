@@ -10,3 +10,5 @@ mkdir data/FormatATablet
 mkdir data/FormatBTablet
 mkdir data/FormatAMobile
 mkdir data/FormatBMobile
+mkdir data/pubmed
+mkdir data/raw

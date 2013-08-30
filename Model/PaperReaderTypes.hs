@@ -6,12 +6,6 @@ import Text.XML
 import qualified Data.Text as T (pack,unpack,concat,Text,replace,append,intercalate,splitOn,head)
 import Data.List as L
 import qualified Data.Map as M
--- import qualified Data.MessagePack as MP
--- import qualified Data.ByteString as B
--- import qualified Data.ByteString.Lazy as LB
-
--- import Text.XML.Cursor(Cursor,fromDocument)
-
 
 -- TODO: Differentiate title in Paper and title in Citation
 -- title in Citation should be plain text

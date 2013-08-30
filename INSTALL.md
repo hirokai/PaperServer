@@ -1,63 +1,39 @@
 How to install the server (Checked on Ubuntu 12.04)
 ===================================================
 
-1. Clone Git repo
+### 1. Clone Git repo
+`git clone https://github.com/hirokai/PaperServer`
 
-2. Modify config/settings.yml
+### 1. Modify config/settings.yml
 
-Set approot correctly
-> approot: "http://157.7.167.209:3000"
+### 1. Set `approot`, `hostname`, and `analytics_code` in `config` folder correctly
 
-3. Install dependencies by cabal
+### 1. Run the following scripts
+> ./mkfolders.sh<br>
+> ./compile.sh
 
-4. Use ghc-pkg to resolve version conflicts.
-Removing conflicting packages and adding again should work.
-(This glitch should be fixed at some point.)
 
-5. Configure, compile, and install
-> cabal clean
-> cabal configure
-> cabal build
-
-6. Install and set up MongoDB and nginx
-Following steps are described in http://www.yesodweb.com/book/deploying-your-webapp for more info.
-
-> apt-get update
-> apt-get install mongodb-10gen
-> apt-get install nginx 
-
-Edit "db-path" option in /etc/init.d/mongodb.conf
+### 1. Edit "db-path" option in /etc/init.d/mongodb.conf if needed
 http://docs.mongodb.org/manual/tutorial/install-mongodb-on-ubuntu/
 
-Put something like following into /etc/nginx/nginx.conf
+### 1. Put something like `macosx_nginx.conf` into /etc/nginx/nginx.conf
 
->	server {
->   listen 80;
->   server_name 157.7.167.209;
->   rewrite ^/(.*) http://157.7.167.209:3000/$1 permanent;
->   location / {
->     proxy_pass http://157.7.167.209:3000;
->   }
->   location /static {
->     root /root/PaperServer/static;
->     expires max;
->   }
-> }
 
-7. Start MongoDB and nginx
-> service mongodb start
+### 1. Start MongoDB and nginx
+> service mongodb start<br>
 > service nginx start
 
-8. Set up the PaperServer as a service
-> cat > /etc/init/paper.conf
-> description "Paper server"
-> start on runlevel [2345];
-> stop on runlevel [!2345];
-> respawn
-> chdir /root/PaperServer
+### 1. Set up the PaperServer as a service
+
+> cat > /etc/init/paper.conf<br>
+> description "Paper server"<br>
+> start on runlevel [2345];<br>
+> stop on runlevel [!2345];<br>
+> respawn<br>
+> chdir /root/PaperServer<br>
 > exec /root/PaperServer/dist/build/PaperServer/PaperServer Production
 
-Paper server can be started and stopped by
+### 1. Paper server can be started and stopped by
 > start paper
 > stop paper
 

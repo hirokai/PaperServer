@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 -----------------------------------------------------------------------------
 --
 -- Module      :  Model.PaperReader.Rockfeller

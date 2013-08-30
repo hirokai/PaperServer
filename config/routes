@@ -17,14 +17,19 @@
 
 -- ToDo: refactor names.
 /paper/add_url AddUrlR POST
-/paper/add AddPaperR POST OPTIONS
+/paper/add_from_bookmarklet AddFromBookmarkletR POST
+/paper/add AddPaperR POST
 /paper/supported SupportedPaperR GET POST
 /paper/a/#PaperId PaperRa GET
 /paper/b/#PaperId PaperRb GET
+/paper/c/#PaperId PaperRc GET
 /m/paper/a/#PaperId MobilePaperRa GET
 /tablet/paper/b/#PaperId PaperTabletRb GET
 /paper/raw/#PaperId RawHtmlR GET
 /paper/cit/#PaperId PaperCitationR GET
+
+/pubmed/add AddPubmedInfoR POST
+/pubmed/reload	RefetchPubmedInfo GET
 
 /paper/refs/#PaperId    PaperRefsR GET POST
 
@@ -37,6 +42,9 @@
 /paper/add_tags AddTagsR POST
 /paper/replace_tags ReplaceTagsR POST
 /paper/remove_tags RemoveTagsR POST
+
+/activity ActivityR GET
+/activity.json ActivityJsonR GET
 
 -- /doi/a/#String/#String DoiPaperR GET
 

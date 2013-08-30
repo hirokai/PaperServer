@@ -3,58 +3,57 @@
   <head>
     <meta charset="UTF-8">
     <title>PaperServerについて</title>
-    <link href="/static/css/lib/bootstrap-combined.min.css" rel="stylesheet">
+    <link href="/static/css/lib/bootstrap.min.css" rel="stylesheet">
     <link href='/doc/intro.css' rel='stylesheet' type='text/css'>
   </head>
   <body>
-    <div class="navbar navbar-fixed-top">
-        <div class="navbar-inner">
-    <a class="brand" href="#"> PaperServer</a>
-    <ul class="nav">
+<div class="navbar navbar-fixed-top">
+  <a class="navbar-brand hidden-sm" href="#">PaperServer</a>
+  <ul class="nav navbar-nav">
       <li class="active"><a href="#intro">概要</a></li>
       <li><a href="#requirement">動作環境</a></li>
       <li><a href="#features">機能</a></li>
       <li><a href="#journals">対応ジャーナル</a></li>
-    </ul>
-  </div>
+  </ul>
+
 </div>
     <div id='maindiv' class='container'>
     <section  id='intro'>
-      <h1>概要</h1>
+      <h1>なぜまた新しい文献管理ソフトなのか？</h1>
       <p>
-      近年のオンラインジャーナルの普及によって、科学論文の文献検索の効率は圧倒的に向上しています。一方で、大量の文献に短時間にアクセスすることが可能になったため、その管理の仕方によって、文献調査の効率も大きく変わってくると考えられます。</p>
+      近年のオンラインジャーナルの普及によって、科学論文の文献検索の効率は圧倒的に向上しています。大量の文献に短時間にアクセスすることが可能になったため、その管理を工夫することで、文献調査の効率がさらに向上すると考えられます。</p>
       <p>Mendeleyを始めとする<a href='http://en.wikipedia.org/wiki/Comparison_of_reference_management_software'>様々な</a>文献管理ソフトを使って論文のpdfを管理するというのが選択肢の一つですが、論文を読むこと自体に関しては、pdfは必ずしも効率が良いとは言えず、しばしば紙に印刷したほうが読みやすいのも事実です。なぜならpdfは印刷用に最適化されたものであるからです（<a href='http://www.usability.gr.jp/alertbox/20030714.html'>記事</a>）。</p>
-      <p>一方で、最近のウェブブラウザの急速な発展に伴い、ブラウザ上の多機能のユーザーインターフェース（UI）で読めるオンラインジャーナルも増えていますが、出版社によってUIが異なり、また動作や読み込みの軽快さが不十分、といった点で使いやすさに改善の余地があります。
-      <p>そこで、PaperServerは以下の点を特長・目標として開発されました。</p>
+      <p>一方で、最近のウェブブラウザの急速な発展に伴い、ブラウザ上で読めるオンラインジャーナルも増えていますが、出版社によって画面のレイアウトや機能が異なり、また動作や読み込みの軽快さが不十分、そして多数の論文を管理するが難しいといった点で改善の余地があります。
+      <p>そこでPaperServerは、論文管理・閲覧の方法を刷新すべく、以下の点を特長・目標として開発されました。</p>
       <div class="row">
-        <div class='span6'><section>
-          <h4>オンラインジャーナルのHTMLが解析され、ジャーナルの種類に関係なく統一的なUIで論文閲覧</h4>
-          ソフトウェアが論文のHTMLファイルを解析し「理解」します。それによって、統一的なUIに整形して表示することができます。無駄な装飾を省いたテキストベースの軽量データ＋ウェブブラウザの高速性を最大限に生かし、紙に印刷する以上に高速かつ快適に論文を読めるUIを目指します。また、すべてがウェブブラウザ上で完結し、プラグインをインストールするだけですぐに使えます。なお、現在は解析ロジックはオンラインジャーナルごとに手書きしていますが、将来的に機械学習的なアプローチによって自動認識することも考えられます。
+        <div class='col-6'>
+            <section>
+          <h4>論文を自動でクラウド上に保存。強力な検索・解析機能により望みの論文を簡単に見つけ出せる。</h4>
+            オンラインジャーナルにアクセスした時点で、その内容を自動でクラウド上に保存します。論文の全文検索や、文書解析技術＋履歴の可視化により、文献検索における知識の体系化を強力にサポートします。
+            </section>
+        <section>
+          <h4>オンラインジャーナルをウェブブラウザ上で軽快に読める</h4>
+          無駄な装飾を省いたテキストベースの軽量データ＋ウェブブラウザの高速性を最大限に生かし、紙に印刷する以上に高速かつ快適に論文を読めるUIを目指します。図や引用文献に、キーボードショートカットで一瞬でジャンプできます。すべての操作はウェブブラウザ上で完結し、ブラウザのプラグインをインストールするだけですぐに使えます。
           </section>
          
-          <section>
-          <h4>ブラウザでアクセスした論文は、自動で内容をクラウド上に保存</h4>
-          
-            文献探索時に「○○のような文献を以前どこかで見たような気がするが見つけられない」という状況にしばしば遭遇します。PaperServerでは、オンラインジャーナルにアクセスした時にその内容を自動でクラウド上に保存するため、メモする手間なく次々と論文を探していくことができます。論文の全文検索もできます（正規表現にも対応）。
-            </section>
           </div>
-          <div class='span6'>
-                  <img id='schematic' src='/doc/img/schematic.png'> 
+          <div class='col-6'>
+                  <img id='schematic' src='/doc/img/schematic.png' class='col-12'> <br>
             <p>PaperServerの動作の概念図。PaperServerにアップロードされた論文のデータは、個人のデータとしてプライベートな領域に置かれ、共有は決してされない。</p>
           </div>
           </div>
-          <section><h4> モバイルでの閲覧環境の強化</h4>
-            現時点で、携帯電話（iPhoneなど）の小さな画面上で論文を効率的に読める環境はほとんどありません。PaperServerでは、一度サーバーに送られて解析された論文は、モバイル環境下でも快適に読めるように整形されて表示されます。また、論文のEPUBを作成することができ、StanzaなどのEPUBリーダーを使えば、iPod touchのオフライン環境などで読むこともできます。
+          <section><h4> モバイルでも快適な閲覧</h4>
+            現時点で、iPhoneなどのモバイル機器の小さな画面で論文を効率的に読める環境はほとんどありません。PaperServerでは、モバイル環境下でも快適に読めるように整形されて表示されます。また、論文のEPUBを作成することができ、StanzaなどのEPUBリーダーを使えばiPod touchのオフライン環境などで読むこともできます。
             </section>
-            <section><h4>高度な履歴検索・解析機能による論文管理の手間の削減（未対応・近日予定）</h4>
-          履歴検索・解析機能によって、いつどのようなテーマの論文を重点的に探索していたか、などといった情報を後から得ることができるようにしたい考えています。これによって、タグ付けやフォルダによる分類の手間を極力省けるようになるのが理想的です。
 
+          <section><h4>安全性・透明性・プライバシーへの配慮</h4>
+          コミュニティー・SNSの機能は敢えて備えていません。個人のデータは安全にクラウド上のプライベートな領域に保管され、決して他のユーザーと共有されることはありません。ソフトウェアのソースコードを公開しているため、ソフトウェアの動作は全て明らかであり、安心して利用できます。また、ユーザーが大学や研究室内のサーバーを用意してその上で動かすこともできます。
           </section>
-          <section><h4>ソーシャル機能の排除</h4>
-          日常使うウェブサービスにソーシャル機能が入り込みすぎていて、また文献管理においては組み込みのソーシャル機能はメリットがあまりなく、むしろ集中の妨げになるというのが私の考えです。
+          <section><h4>他のソフトとのデータのやり取りが可能</h4>
+          Mendeleyのデータベースをインポートすることができ、PaperServerで今日からすぐに、既存の資源を活用できます。また、PaperSereverからRIS形式などの引用情報を出力できます。
           </section>
           <section> <h4>オープンソースソフトウェア</h4>
-          ソフトウェアのソースコードをオープンにすることによって、そのソフトウェアを誰もが検証でき、安全性が担保されます。また、ユーザーが大学や研究室内のサーバーで動かすこともできます（UbuntuとMac OSXで動作を確認）。サーバーのソフトウェアはGPLライセンスで、ソースコードは<a href='http://github.com/hirokai/PaperServer'>Githubで公開</a>しています。共同開発者も募集していますので、興味がある方は<a href='mailto:hkai@berkeley.edu'>作者</a>まで連絡いただければと思います。
+          サーバーのソフトウェアはGPLライセンスで、ソースコードは<a href='http://github.com/hirokai/PaperServer'>Githubで公開</a>しています。サーバーの増設に協力してくださる方やソフトウェアの共同開発者も募集していますので、興味がある方は<a href='mailto:hkai@berkeley.edu'>作者</a>まで連絡いただければと思います。
           </section>
         </section>
       <section id='features'>
@@ -62,16 +61,17 @@
       <div>
       <h3>対応済み</h3>
         <ul>
+        <li>完全無料。オープンソースソフトウェア。</li>
         <li>オンラインジャーナルの論文を整形してウェブブラウザ内で表示。</li>
         <li>無駄を削ぎ落したテキストベースのデータにより、高速な表示・操作が可能。</li>
         <li>ほぼすべての操作がキーボードででき、高速な操作が可能。</li>
         <li>対応するジャーナルのすべての論文が自動で保存される。</li>
+        <li>高度な履歴・文書解析・検索機能。</li>
         <li>モバイル対応の表示。</li>
-        <li>全文検索機能（正規表現が使用可能）。</li>
+        <li>全文検索機能（正規表現に対応）。</li>
         <li>論文データからEPUBの作成。</li>
         <li>文献情報エクスポート（RIS形式）。</li>
-        <li>タグ付けによる論文管理。</li>
-        <li>完全無料。オープンソースソフトウェア。</li>
+        <li>タグ付け、コメントの編集可能。</li>
       </ul>
       </div>
       <div>
@@ -82,14 +82,14 @@
 <li>論文の目次（TOC）機能。</li>
 <li>他のソフトからのライブラリのインポート</li>
 <li>論文の表示スタイルのカスタマイズ。</li>
-<li>履歴・アクティビティー検索機能。</li>
+<li>Mendeleyのデータベースのインポート</li>
         </ul>
     </div>
         </section>
         <section id='requirement'>
         <h1>動作環境</h1>
         <div class='row'>
-          <table class="table zebra-striped span8 offset1">
+          <table class="table zebra-striped col-8 col-offset-1">
             
   <thead>
     <tr>
@@ -151,11 +151,11 @@
             
   <thead>
     <tr>
-       <th class="blue header span2">出版社</th>
-       <th class="blue header span4">ジャーナル</th>
-       <th class="blue header span2">完成度</th>
-       <th class="blue header span2">タイトル・要旨</th>
-       <th class="blue header span2">全文・図・引用文献</th>
+       <th class="blue header col-2">出版社</th>
+       <th class="blue header col-4">ジャーナル</th>
+       <th class="blue header col-2">完成度</th>
+       <th class="blue header col-2">タイトル・要旨</th>
+       <th class="blue header col-2">全文・図・引用文献</th>
      </tr>
   </thead>
   <tbody>

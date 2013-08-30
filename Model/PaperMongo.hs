@@ -4,73 +4,36 @@ module Model.PaperMongo where
 
 import Import
 import qualified Data.Text as T
--- import Safe
-
--- import Control.Applicative
 
 import Data.String
-
--- import Data.Bson ((!?),(=:))
 import Data.Bson as Bson
 
 import qualified Parser.Paper as P
--- import Database.MongoDB ((=:))
 import Database.MongoDB as DB
--- import qualified Database.MongoDB.Query as DB
 import Data.Bson -- ((!?))
--- import qualified Data.Bson as Bson
 import Database.Persist.MongoDB
 
-updatePaperDB :: PaperId -> Paper -> Handler ()
-updatePaperDB pid p = runDB $ Database.Persist.MongoDB.replace pid p   -- FIXME: Use raw mongo. Make Val instance of Paper
+import Model.PaperReader (mkCitHtml)
 
-getPaperDB404 :: Text -> PaperId -> Handler Paper
-getPaperDB404 email pid = do
-  mp <- getPaperDB email pid
-  case mp of
-    Just p -> return p
-    Nothing -> notFound
+import Data.Time
+import Control.Applicative
 
-paperById :: MonadIO m => Text -> PaperId -> DB.Action m (Maybe Bson.Document)
-paperById email pid =
-  paperByFilter email
-    ["_id" =: (read $ T.unpack $ toPathPiece pid :: Bson.ObjectId)]
+--
+-- PaperSummary is used when you don't want large data such as full text.
+-- 
+data PaperSummary = PaperSummary {
+  pTitle :: Text,
+  pCit :: Citation,
+  pId :: Text,
+  pDoi :: Text,
+  pTags :: [Text],
+  pAvail :: ResourceAvailability,
+  pAddedDate :: UTCTime
+} deriving (Show,Eq)
 
-
-paperByFilter :: MonadIO m => Text -> Bson.Document -> DB.Action m (Maybe Bson.Document)
-paperByFilter email filt = do
-    let q = DB.select (["user_email" =: email] ++ filt) "paper"
-    liftIO $ print q
-    DB.findOne q
-
--- papersByFilter :: (Functor m, MonadIO m) => Text -> Bson.Document -> Action m [Bson.Document]
-papersByFilter email filt = do
-    let q = DB.select (["user_email" =: email] ++ filt) "paper"
-    liftIO $ print q
-    c <- DB.find q
-    DB.rest c
-
-queryRawMongoOne action = do
-  app <- getYesod
-  let dbconf = persistConfig app
-  pipe <- liftIO $ DB.runIOE $ DB.connect (DB.host $ T.unpack (mgHost dbconf))
-  eith <- DB.access pipe DB.ReadStaleOk "PaperServer" action
-  liftIO $ DB.close pipe
-  return $ case eith of
-              Left err -> Nothing
-              Right p -> p
-
-queryRawMongo action = do
-  app <- getYesod
-  let dbconf = persistConfig app
-  pipe <- liftIO $ DB.runIOE $ DB.connect (DB.host $ T.unpack (mgHost dbconf))
-  eith <- DB.access pipe DB.ReadStaleOk "PaperServer" action
-  liftIO $ DB.close pipe
-  let recs = case eith of
-              Left err -> []
-              Right ps -> ps
-  return recs
-
+--
+-- High level functions to get Paper(s)
+--
 
 getPaperById = getPaperDB
 
@@ -83,22 +46,13 @@ getPaperDB email pid = do
       Just bs -> paperFromBson bs
       Nothing -> Nothing
 
-getPaperByFilter :: Text -> Bson.Document -> Handler (Maybe Paper)
-getPaperByFilter email filt = do
-  bson <- queryRawMongoOne $ paperByFilter email filt
-  return $
-    case bson of
-      Just bs -> paperFromBson bs
-      Nothing -> Nothing
-
+getPapersByIds :: Text -> [PaperId] -> Handler [Paper]
 getPapersByIds email ids = getPapersByFilter email ["_id" =: ["$in" =: map f ids]]
   where
     f pid = (read . T.unpack . toPathPiece) pid :: ObjectId
 
-getPapersByFilter :: Text -> Bson.Document -> Handler [Paper]
-getPapersByFilter email filt = do
-  bs <- queryRawMongo $ papersByFilter email filt
-  return $ catMaybes $ map paperFromBson bs
+getRawHtmlById :: Text -> PaperId -> Handler (Maybe Text)
+getRawHtmlById email pid = queryRawMongoOne $ rawHtmlById email pid
 
 getPaperByUrl :: Text -> Url -> Handler (Maybe (PaperId,Paper))
 getPaperByUrl email url = do
@@ -110,8 +64,242 @@ getPaperByUrl email url = do
               Nothing -> Nothing
   return res
 
+--For performance reason, there are two functions, getPaperByFilter and getPapersByFilter
+getPaperByFilter :: Text -> Bson.Document -> Handler (Maybe Paper)
+getPaperByFilter email filt = do
+  bson <- queryRawMongoOne $ paperByFilter email filt
+  return $
+    case bson of
+      Just bs -> paperFromBson bs
+      Nothing -> Nothing
+
+getPapersByFilter :: Text -> Bson.Document -> Handler [Paper]
+getPapersByFilter email filt = queryRawMongo $ papersByFilter email filt
+
+getSummariesByFilter :: Text -> Bson.Document -> Handler [PaperSummary]
+getSummariesByFilter email filt = queryRawMongo $ summariesFilter email filt
+
+-- This function assumes query has correct user_email for filtering.
+getSummariesByQuery :: DB.Query -> Handler [PaperSummary]
+getSummariesByQuery query = do
+  sums <- queryRawMongo $ do
+    c <- DB.find query
+    res <- DB.rest c
+    return $ map fromBson res
+  return $ catMaybes sums
+
+countPapersByFilter :: Text -> Bson.Document -> Handler Int
+countPapersByFilter email filt = do
+  c <- queryRawMongoOne $ countMatching email filt
+  return $ fromMaybe 0 c
+
+-- This function assumes query has correct user_email for filtering.
+countPapersByQuery :: DB.Query -> Handler Int
+countPapersByQuery query = do
+  c <- queryRawMongoOne $ fmap Just $ DB.count query
+  return $ fromMaybe 0 c
+
+-- FIXME: Use raw mongo. To do that, Make Val instance of Paper. 
+updatePaperDB :: PaperId -> Paper -> Handler ()
+updatePaperDB pid p = runDB $ Database.Persist.MongoDB.replace pid p
+
+getPaperDB404 :: Text -> PaperId -> Handler Paper
+getPaperDB404 email pid = do
+  mp <- getPaperDB email pid
+  case mp of
+    Just p -> return p
+    Nothing -> notFound
 
 
+-- allOfUser :: (MonadBaseControl IO m, Monad m,Control.Monad.IO.Class.MonadIO m) => Text -> Action m [Bson.Document]
+-- allSummariesOfUser :: Text -> m a [Document]
+summaryList = ["url" =: on,"citation" =: on,"doi" =: on,"tags" =: on,
+                             "available" =: on,"time_added" =: on]
+  where on = 1 :: Int
+
+
+
+-- allOfUser email = summariesFilter email id
+
+--
+-- Execution functions for DB.Action's.
+--
+
+-- FIXME: Use connection pool of Yesod to avoid connecting every time.
+queryRawMongoOne :: DB.Action Handler (Maybe a) -> Handler (Maybe a)
+queryRawMongoOne action = do
+  app <- getYesod
+  let dbconf = persistConfig app
+  let (Just (MongoAuth user pass)) = mgAuth dbconf
+  pipe <- liftIO $ DB.runIOE $ DB.connect (DB.host $ T.unpack (mgHost dbconf))
+  eith <- DB.access pipe DB.ReadStaleOk "PaperServer" (doAuth user pass >> action)
+  liftIO $ DB.close pipe
+  return $ case eith of
+              Left err -> Nothing
+              Right p -> p
+
+-- FIXME: Use connection pool of Yesod to avoid connecting every time.
+queryRawMongo :: DB.Action Handler [a] -> Handler [a]
+queryRawMongo action = do
+  app <- getYesod
+  let dbconf = persistConfig app
+  let (Just (MongoAuth user pass)) = mgAuth dbconf
+  pipe <- liftIO $ DB.runIOE $ DB.connect (DB.host $ T.unpack (mgHost dbconf))
+  eith <- DB.access pipe DB.ReadStaleOk "PaperServer" (doAuth user pass >> action)
+  liftIO $ DB.close pipe
+  let recs = case eith of
+              Left err -> []
+              Right ps -> ps
+  return recs
+
+--
+-- Actions for Database.MongoDB.Query
+-- These are used combined with queryRawMongoOne and queryRawMongo
+--
+{-
+countMatching :: Text -> Bson.Document -> DB.Action Handler Int
+countMatching email filt = do
+  let q = (DB.select (["user_email" =: email] ++ filt) "paper") :: DB.Query
+  app <- getYesod
+  let dbconf = persistConfig app
+  pipe <- liftIO $ DB.runIOE $ DB.connect (DB.host $ T.unpack (mgHost dbconf))
+  eith <- DB.access pipe DB.ReadStaleOk "PaperServer" (DB.count q)
+  liftIO $ DB.close pipe
+  let len = case eith of
+              Left err -> 0
+              Right l -> l
+  return len
+-}
+
+doAuth :: (MonadIO m, Applicative m) => Text -> Text -> DB.Action m Bool
+doAuth u p = DB.auth u p
+
+countMatching :: Text -> Bson.Document -> DB.Action Handler (Maybe Int)
+countMatching email filt = do
+  c <- DB.count (DB.select (["user_email" =: email]++filt) "paper")
+  return $ Just c
+
+collectAllTags :: Text -> DB.Action Handler [Text]
+collectAllTags email = do
+  let q = (DB.select ["user_email" =: email] "paper")
+  vs <- DB.distinct "tags" q
+  return $ map (\(DB.String t) -> t) vs
+
+
+collectTags :: Text -> Document -> DB.Action Handler [[Text]]
+collectTags email filt = do
+  let on = 1 :: Int
+  let q = (DB.select (filt ++ ["user_email" =: email]) "paper")
+  liftIO $ print q
+  cur <- DB.find q{DB.project = ["tags" =: on]}
+  ts <- DB.rest cur
+  return $ map convert ts
+  where
+    convert :: DB.Document -> [Text]
+    convert doc = fromMaybe [] $ doc !? "tags"
+
+
+summariesFilter :: Text -> Document -> DB.Action Handler [PaperSummary]
+summariesFilter email filt = do
+    let q = DB.select (["user_email" =: email] ++ filt) "paper"
+    let qq = q{DB.project = summaryList}
+--    liftIO $ print qq
+    cur <- DB.find qq
+    res <- DB.rest cur
+    return $ catMaybes $ map fromBson res
+
+fromPid :: PaperId -> Bson.ObjectId
+fromPid = read . T.unpack . toPathPiece
+
+paperById :: Text -> PaperId -> DB.Action Handler (Maybe Bson.Document)
+paperById email pid = do
+  paperByFilter email
+    ["_id" =: fromPid pid]
+
+rawHtmlById :: Text -> PaperId -> DB.Action Handler (Maybe Text)
+rawHtmlById email pid = do
+    let q = DB.select (["user_email" =: email, "_id" =: fromPid pid]) "paper"
+    let qq = q{DB.project = ["original_html" =: (1::Int)]}
+    md <- DB.findOne qq
+    return $ md >>= Bson.lookup "original_html"
+
+paperByFilter :: Text -> Bson.Document -> DB.Action Handler (Maybe Bson.Document)
+paperByFilter email filt = do
+    let q = DB.select (["user_email" =: email] ++ filt) "paper"
+    liftIO $ print q
+    DB.findOne q
+
+-- papersByFilter :: (Functor m, MonadIO m) => Text -> Bson.Document -> Action m [Bson.Document]
+papersByFilter :: Text -> Bson.Document -> DB.Action Handler [Paper]
+papersByFilter email filt = do
+    let q = DB.select (["user_email" =: email] ++ filt) "paper"
+    liftIO $ print q
+    c <- DB.find q
+    res <- DB.rest c
+    return $ catMaybes $ map paperFromBson res
+
+-- This is only used for Handler.PaperListW2UI. Should be removed at some point.
+defaultQuery :: Text -> DB.Query
+defaultQuery email = select ["user_email" =: email] "paper"
+
+
+--
+-- BSON <=> Paper data types conversion.
+--
+
+paperFromBson :: Bson.Document -> Maybe Paper
+paperFromBson doc =
+  let
+    fromObjId :: Bson.ObjectId -> Text
+    fromObjId oid = T.pack $ show oid
+    mcit = doc !? "citation"
+    mavail = do
+      txt <- doc !? "available"
+      return $ f (T.splitOn "," txt)
+        where
+          f ts = ResourceAvailability
+                   ("cit" `elem` ts) 
+                   ("abs" `elem` ts) 
+                   ("full" `elem` ts) 
+                   ("fig" `elem` ts) 
+                   ("ref" `elem` ts) 
+                   ("toc" `elem` ts)
+    doi = doc !? "doi"
+    url = doc !? "url"
+    orig = doc !? "original_html"
+    abs = doc !? "abstract"
+    mainh = doc !? "main_html"
+    refs = fromMaybe [] $ doc !? "references"
+    figs = fromMaybe [] $ doc !? "figures"
+    res = fromMaybe [] $ doc !? "resources"
+    toc = doc !? "toc"
+    tags = fromMaybe [] $ doc !? "tags"
+    note = doc !? "note"
+    misc = (fromString . T.unpack) $ fromMaybe "" $ doc !? "misc" :: ByteString
+    pinfo = doc !? "parser_info"
+    supp = doc !? "support_level"
+    email = doc !? "user_email"
+    time = doc !? "time_added"
+  in
+  Paper
+    <$> doi
+    <*> url
+    <*> orig
+    <*> Just abs
+    <*> Just mainh
+    <*> mcit
+    <*> Just refs
+    <*> Just figs
+    <*> Just res
+    <*> Just toc
+    <*> Just tags
+    <*> Just note
+    <*> Just misc
+    <*> Just pinfo
+    <*> supp
+    <*> mavail
+    <*> email
+    <*> time
 
 instance Val Figure where
   val (Figure fid name annot img local) =
@@ -191,6 +379,7 @@ instance Val Citation where
       typ = doc !? "type"
     in
       Just $ Citation d u t j y v pf pt as pub typ
+  cast' _ = Nothing
   val (Citation d u t j y v pf pt as pub typ)
     = Doc
       ["doi" =: d
@@ -216,12 +405,57 @@ instance Val LocalCopyStatus where
   cast' (Int32 2) = Just Failed
   cast' _ = Just Unknown
 
-paperFromBson :: Bson.Document -> Maybe Paper
-paperFromBson doc =
+
+
+
+--
+-- PaperSummary conversion functions
+--
+
+instance ToJSON PaperSummary where
+  toJSON (PaperSummary title cit pid doi tags avail date)
+    = object [
+        "title" .= title
+        , "citation" .= cit
+        , "id" .= pid
+        , "doi" .= doi
+        , "tags" .= tags
+        , "availability" .= avail
+        , "addedDate" .= date
+        ]
+{-
+mkPSVals (PaperSummary t c i d tags avail date) =
+  let
+    --Stub!!
+  in
+  ["citation" .= c
+   , "cittext" .= mkCitHtml c 
+   , "available" .= avail
+   , "tags" .= tags
+   , "id" .= i
+   , "date" .= date]  -- Stub!!
+-}
+
+fromBson :: Bson.Document -> Maybe PaperSummary
+fromBson doc =
   let
     fromObjId :: Bson.ObjectId -> Text
     fromObjId oid = T.pack $ show oid
-    mcit = doc !? "citation"
+    mcit =
+      let
+        d = doc !? "citation.doi"
+        u = doc !? "citation.url"
+        t = doc !? "citation.title"
+        j = doc !? "citation.journal"
+        y = doc !? "citation.year"
+        v = doc !? "citation.volume"
+        pf = doc !? "citation.pageFrom"
+        pt = doc !? "citation.pageTo"
+        as = fromMaybe [] $ doc !? "citation.authors"
+        pub = doc !? "citation.publisher"
+        typ = doc !? "citation.type"
+      in
+        Just $ Citation d u t j y v pf pt as pub typ 
     mavail = do
       txt <- doc !? "available"
       return $ f (T.splitOn "," txt)
@@ -233,51 +467,13 @@ paperFromBson doc =
                    ("fig" `elem` ts) 
                    ("ref" `elem` ts) 
                    ("toc" `elem` ts)
-    doi = doc !? "doi"
-    url = doc !? "url"
-    orig = doc !? "original_html"
-    abs = doc !? "abstract"
-    mainh = doc !? "main_html"
-    refs = fromMaybe [] $ doc !? "references"
-    figs = fromMaybe [] $ doc !? "figures"
-    res = fromMaybe [] $ doc !? "resources"
-    toc = doc !? "toc"
-    tags = fromMaybe [] $ doc !? "tags"
-    note = doc !? "note"
-    misc = (fromString . T.unpack) $ fromMaybe "" $ doc !? "misc" :: ByteString
-    pinfo = doc !? "parser_info"
-    supp = doc !? "support_level"
-    email = doc !? "user_email"
-    time = doc !? "time_added"
+    mdate = doc !? "time_added"
   in
-  Paper
-    <$> doi
-    <*> url
-    <*> orig
-    <*> Just abs
-    <*> Just mainh
+  PaperSummary
+    <$> doc !? "citation.title"
     <*> mcit
-    <*> Just refs
-    <*> Just figs
-    <*> Just res
-    <*> Just toc
-    <*> Just tags
-    <*> Just note
-    <*> Just misc
-    <*> Just pinfo
-    <*> supp
+    <*> fmap fromObjId (doc !? "_id")
+    <*> doc !? "doi"
+    <*> doc !? "tags"
     <*> mavail
-    <*> email
-    <*> time
-
-
-
-
-
-
-
-
-
-
-
-
+    <*> mdate

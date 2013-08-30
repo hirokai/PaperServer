@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 -- Handler.Resource
 
 module Handler.Resource (
@@ -8,32 +10,12 @@ module Handler.Resource (
 where
 
 import Import
--- import Data.Text (Text)
 import qualified Data.Text as T
--- import qualified Data.Text.IO as TIO
--- import qualified Data.Text.Lazy.IO as TLIO
 import Data.List hiding (insert)
--- import Handler.Utils(localRes)
 import System.Directory (doesFileExist)
--- import Data.Aeson as Ae hiding (object)
--- import Safe
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64 as B64
--- import Data.String
 import Data.Text.Encoding
--- import Control.Monad
--- import Control.Lens hiding ((.=))
-
--- import Yesod.Auth (Route(LogoutR))
--- import Model.PaperP
--- import qualified Parser.Paper as P
--- import Text.Hamlet
--- import Text.Blaze.Html
--- import Text.Blaze.Html.Renderer.Text
--- import Handler.Widget
--- import Data.Maybe
--- import Text.HTML.SanitizeXSS (sanitize)
--- import Handler.Home
 
 
 -- Returns the resource list for the specified paper.

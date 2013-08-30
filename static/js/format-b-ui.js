@@ -4,6 +4,7 @@ Config = new Object();
 Config.debug = true;
 
 var path_reparse = '/paper/single_reparse/';
+var path_pubmed = '/pubmed/reload/'
 var path_resourcelist = '/resource_for/'
 var path_upload = '/upload_resource';
 
@@ -127,6 +128,23 @@ function registerKeyEvents(){
   addKey(0,82,function() {location.replace("#references")});
 }
 
+var path_uploadpubmed = '/pubmed/add'
+function setupPubmedFetching(pid,doi){
+  var url = "http://www.ncbi.nlm.nih.gov/pubmed?term="+encodeURI(doi)+"%5BLocation%20ID%5D&report=xml&format=text";
+    $.ajax({
+      url: url
+      , type: "GET"
+      , dataType: 'text'
+      , success:function(res){
+        var xml = res.replace('&lt;', '<')
+                   .replace('&gt;', '>');
+      console.log(xml);
+      $.post(path_uploadpubmed,{id: pid,doi:doi, xml: xml},function(res){
+        console.log(res);
+      });
+      }});
+}
+
 function setupUI(){
 
 
@@ -146,6 +164,16 @@ function setupUI(){
   $('#button-help').popover({html:true,content:help_html,
     placement:'bottom',animation: false,trigger:'hover'});
   
+  $('#button-pubmed').click(function(){
+    var pid = $('meta[name="paper_id"]').prop('content');
+    var doi = $('meta[name="doi"]').prop('content');
+    $.get("/pubmed/reload",{id:pid,doi:doi},function(res){
+      if(res.success){
+        location.reload();
+      }
+    });
+   // setupPubmedFetching(pid,doi);
+  });
   $('#button-reparse').click(function(){
     var pid = $('meta[name="paper_id"]').prop('content');
     $.get(path_reparse,{id:pid},function(res){
@@ -367,6 +395,9 @@ function showAlert(str){
 }
 function toggleColor(){
 		$('body').toggleClass('white');
+    $('div.navbar').toggleClass('navbar-inverse');
+    $('.btn').toggleClass('btn-inverse');
+    $('i[class^="icon-"]').toggleClass('icon-white');
 }
 /*
 $(function(){

@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell,TypeFamilies,EmptyDataDecls,DeriveDataTypeable,GADTs #-}
+
 module Model where
 
 import Prelude
@@ -11,12 +13,11 @@ import Data.Typeable (Typeable)
 import Data.Maybe
 import qualified Data.Text as T
 import Data.ByteString (ByteString)
--- import qualified Data.ByteString as B
 import Data.Time.Clock
--- import Database.Persist.Sql
 import qualified Parser.Paper as P
 
 import Model.Defs
+import Data.Data
     
 {-
 import Database.Persist.Quasi

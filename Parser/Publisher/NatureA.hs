@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 -----------------------------------------------------------------------------
 --
 -- Module      :  Model.PaperReader.NatureA
@@ -25,14 +27,12 @@ module Parser.Publisher.NatureA (
 import Parser.Import
 import Text.XML
 import Text.XML.Cursor as C
--- import Data.Maybe
 import qualified Data.Text as T
 import Data.Text.Lazy  (toStrict)
 import Data.List
 import Parser.Utils
+import Control.Applicative
 import qualified Data.Map as M
-
--- import Debug.Trace
 
 import Parser.Publisher.NatureCommon (_title,_volume,_pageFrom,_pageTo)
 
@@ -65,7 +65,7 @@ _supported r url c = boolToSupp  $ isJust ((supportedUrl r) r url) && ((articleT
 _mainHtml _ = fmap FlatHtml . render . map subLink . nofignav . nolater .
               noabstract . map node . concatMap (element "section") . descendant
 
-_doi _ = innerText . queryT [jq|dd.doi|]
+_doi _ = toStrict . innerText . queryT [jq|dd.doi|]
 
 _journal _ cursor = Just $ head $ map (T.strip . head) $ filter (\x -> not $ null x) $ cursor $// element "p" &| attributeIs "class" "article-type" &.// content
 
@@ -76,7 +76,7 @@ _year _ cursor = headm (getMeta "DC.date" cursor) >>= f
 
 _authors _ = getMeta "DC.creator"
 
-_abstract _ cur = if null es then Nothing else (Just . toStrict . renderNodes . (:[]) . node . head) es
+_abstract _ cur = if null es then Nothing else (render . (:[]) . node . head) es
     where
      es = cur $| query "#abstract p" >=> child
 
@@ -85,8 +85,10 @@ _abstract _ cur = if null es then Nothing else (Just . toStrict . renderNodes . 
 -- _articleType _ cursor = Just $ head $ map (T.strip . last) $ filter (\x -> not $ null x) $
 --                      cursor $// element "p" &| attributeIs "class" "article-type" &.// content
 
-_articleType _ cursor = headm $ map (T.strip . last) $ filter (\x -> not $ null x) $
-                      cursor $// element "p" &| attributeIs "class" "article-type" &.// content
+_articleType _ cursor =
+  (headMay $ getMeta "prism.section" cursor)
+  <|> (headm $ map (T.strip . last) $ filter (\x -> not $ null x) $
+                      cursor $// element "p" &| attributeIs "class" "article-type" &.// content)
 
 _refs _ cur = map r ns
     where
@@ -94,7 +96,7 @@ _refs _ cur = map r ns
       r n@(NodeElement (Element name as cs)) = Reference (refid as) (refname as)(Just emptyCitation) (Just (txt cs)) (url n)
       refid as = fromMaybe "" (M.lookup "id" as)
       refname as = T.drop 3 (refid as)
-      txt cs = T.strip $ T.concat $ map innerTextN $ takeWhile g cs
+      txt cs = T.strip $ toStrict $ innerText $ takeWhile g cs
       g (NodeElement (Element name as cs)) = name /= "ul"
       g _ = True
       url n = let cs = fromNode n $// element "a" >=> attribute "href" in
@@ -103,7 +105,7 @@ _refs _ cur = map r ns
 
 _figs _ cur = []
 
-_toc _ cur = Just $ (\x -> traceShow x x) $ T.intercalate "::" $ map (innerTextN . node) $ nav $| query "li"
+_toc _ cur = Just $ (\x -> traceShow x x) $ T.intercalate "::" $ map (toStrict . innerText) $ nav $| query "li"
     where
       nav = head $ cur $| query "section nav"
 

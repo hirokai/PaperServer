@@ -7,46 +7,22 @@ module Model.PaperReader where
 
 import Import
 
--- import Data.List
--- import Data.Maybe
 import Control.Lens
--- import qualified Data.Map as M
--- import Control.Monad(mzero)
 
 import qualified Data.Text as T
--- import Data.Text (Text)
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.IO as TIO
--- import Data.Text.Lazy.Encoding (decodeUtf8,encodeUtf8)
--- import qualified Data.ByteString.Lazy as BL
--- import Data.ByteString.Lazy.Char8 (pack)
--- import Data.ByteString.UTF8 ()
--- import Codec.Binary.UTF8.String (decodeString)
--- import Data.String 
 
 import Text.Blaze.Html.Renderer.Text
--- import qualified Text.HTML.DOM as H
--- import Text.XML.Cursor
--- import Text.XML (Document)
 import Text.XML.Selector (maybeText)
 
--- import Data.Hashable (hash)
-
--- import Data.Aeson as Ae hiding (object) 
-
--- import Model
--- import Model.Defs
 import Model.PaperP (renderStructured)
--- import Model.PaperReaderTypes
 
 -- From paperserver-parser package
 import qualified Parser.Paper as P
 import Parser.PaperReader (parseHtml)
 
 import Control.Exception (try,IOException)
--- import Control.Concurrent
--- import System.Process
--- import System.Directory (doesFileExist)
 
 type ReaderName = String
 

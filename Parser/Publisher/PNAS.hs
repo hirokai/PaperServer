@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 -----------------------------------------------------------------------------
 --
 -- Module      :  Model.PaperReader.PNAS
@@ -26,6 +28,7 @@ import Text.XML.Cursor as C
 import Parser.Utils
 import Data.Text.Read
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import Control.Applicative
 
 _pnasReader :: PaperReader
@@ -102,7 +105,7 @@ ext cur = Reference <$> rid <*> rname <*> cit cur <*> txt <*> url
       c <- (headm . queryT [jq| a.rev-xref-ref |]) cur
       (eid . node) c
     rname = rid >>= dropmt 4
-    txt = (Just . maybeText . innerText . queryT [jq| cite |]) cur
+    txt = (Just . maybeText . TL.toStrict . innerText . queryT [jq| cite |]) cur
     url = Just Nothing
       
 
@@ -110,13 +113,13 @@ cit cur = Just $ Just $ emptyCitation{
             _citationTitle=title,_citationJournal=journal,_citationAuthors=auths,
             _citationYear=year,_citationVolume=volume,_citationPageFrom=pfrom,_citationPageTo=pto}
   where
-    auths = (catMaybes . map (maybeText . innerText . (:[])) . queryT [jq| span.cit-auth |]) cur
-    year = (f . fmap decimal . maybeText . innerText . queryT [jq| span.cit-pub-date |]) cur
+    auths = (catMaybes . map (innert . (:[])) . queryT [jq| span.cit-auth |]) cur
+    year = (f . fmap decimal . innert . queryT [jq| span.cit-pub-date |]) cur
     f :: Maybe (Either String (Int,T.Text)) -> Maybe Int
     f (Just (Right (v,_))) = Just v
     f _ = Nothing
-    title = (maybeText . innerText . queryT [jq| span.cit-article-tite |]) cur
-    journal = (maybeText . innerText . queryT [jq| span.cit-jnl-abbrev |]) cur
-    volume = (maybeText . innerText . queryT [jq| span.cit-vol |]) cur
-    pfrom = (maybeText . innerText . queryT [jq| span.cit-fpage |]) cur
-    pto = (maybeText . innerText . queryT [jq| span.cit-lpage |]) cur
+    title = (innert . queryT [jq| span.cit-article-tite |]) cur
+    journal = (innert . queryT [jq| span.cit-jnl-abbrev |]) cur
+    volume = (innert . queryT [jq| span.cit-vol |]) cur
+    pfrom = (innert . queryT [jq| span.cit-fpage |]) cur
+    pto = (innert . queryT [jq| span.cit-lpage |]) cur

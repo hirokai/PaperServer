@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 -----------------------------------------------------------------------------
 --
 -- Module      :  Model.PaperReader.PLoSONE
@@ -133,7 +135,7 @@ _mainHtml _ c = fmap FlatHtml $ render $ removeQueries ["div.figure"] $ map node
 
 _refs _ c = catMaybes . map parseCit $
               zip (getMeta "citation_reference" c)
-                  $ (map innerTextN . removeQueries ["span.label","a.find"] . map node . queryT [jq| ol.references > li|]) c
+                  $ (map (toStrict . innerText) . removeQueries ["span.label","a.find"] . map node . queryT [jq| ol.references > li|]) c
 
 
 _figs _ cur =
@@ -145,7 +147,7 @@ _figs _ cur =
         name = do
           e <- headMay $ queryT [jq| p > strong > strong |] c
           inner [e]
-        cap = maybeText $ toStrict $ renderNodes $
+        cap = maybeText $ toStrict $ toHtml $
                   -- removeQueries ["strong > strong"] $
                   map node $ queryT [jq| p |] c
         img = do
@@ -167,11 +169,40 @@ parseCit (meta,cittext) = (toRef . M.fromList . catMaybes . map (toTuple . T.spl
     toRef :: M.Map T.Text T.Text -> Maybe Reference
     toRef m = traceShow f f
       where
-        f = Reference <$> num <*> num <*> Just cit <*> Just (maybeText cittext) <*> Just Nothing
+        f = Reference <$> num <*> num <*> Just cit <*> Just (ctxt <|> (cit >>= mkcit)) <*> Just Nothing
+        (ctxt,mdoi) = parseCitText title cittext
+        pages = fmap (T.splitOn "-") $ M.lookup "citation_pages" m :: Maybe [Text]
         num = M.lookup "citation_number" m
+        title = M.lookup "citation_title" m
+        mkcit c = do
+          j <- c^.citationJournal
+          v <- c^.citationVolume
+          pf <- c^.citationPageFrom
+          return $ T.concat [j, ", ", v,   ", ", pf]
         cit = Just $ emptyCitation{
-                _citationTitle=M.lookup "citation_title" m,
+                _citationTitle=title,
                 _citationJournal=M.lookup "citation_journal_title" m,
-                _citationVolume=M.lookup "citation_volume" m
+                _citationVolume=M.lookup "citation_volume" m,
+                _citationPageFrom = pages >>= flip atMay 0,
+                _citationPageTo = pages >>= flip atMay 1,
+                _citationDoi = mdoi
               }
+
+parseCitText :: Maybe Text -> Text -> (Maybe Text,Maybe Text)
+parseCitText mtitle txt =
+  let
+    ctxt = do
+      t <- mtitle
+      ts <- tailMay $ T.splitOn t txt
+      str <- headMay $ T.splitOn "doi:" (T.concat ts)
+      return $ T.strip str
+    doi = do
+      let ts = T.splitOn "doi:" txt
+      case length ts of
+        2 -> do
+          ts2 <- maybeText $ T.strip (ts !! 1)
+          return $ T.init ts2
+        _ -> Nothing
+  in
+    (traceShow ctxt ctxt,doi)
 

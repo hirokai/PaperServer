@@ -12,6 +12,7 @@
   "content_scripts": [
     {
       "matches": [
+         "http://localhost/*",
          "http://pubs.acs.org/doi/*",
          "http://www.annualreviews.org/doi/*",
          "http://link.springer.com/article/*",
@@ -30,13 +31,24 @@
          "http://www.pnas.org/*",
          "http://*.rupress.org/*",
          "http://www.jimmunol.org/*"
+         , "http://www.biomedcentral.com/*"
+         , "http://*.aps.org/*"
+         , "https://www.thieme-connect.com/ejournals/*"
+         , "http://www.jbc.org/*"
+         , "http://*.royalsocietypublishing.org/*"
+         , "http://ieeexplore.ieee.org/*"
+         , "http://elife.elifesciences.org/content/*"
+         , "http://pubs.rsc.org/en/content/*"
        ],
 			 "run_at": "document_start",
-      "js": ["jquery-1.9.1.min.js", "common.js"]
+      "js": ["jquery-1.9.1.min.js", "underscore-min.js","content_script.js"]
     }
   ],
   "permissions": [
+    "tabs",
+    "http://*/*",
     "notifications",
+    "http://www.ncbi.nlm.nih.gov/",
     "http://paperserver.jp/*",
     "http://localhost/*",
          "http://link.springer.com/article/*",
@@ -56,8 +68,16 @@
          "http://onlinelibrary.wiley.com/doi/*",
          "http://www.pnas.org/*",
          "http://*.rupress.org/*",
-         "http://www.jimmunol.org/*" 
-    ],
+         "http://www.jimmunol.org/*"
+         , "http://www.biomedcentral.com/*"
+         , "http://*.aps.org/*"
+         , "https://www.thieme-connect.com/ejournals/*"
+                  , "http://www.jbc.org/*"
+        , "http://*.royalsocietypublishing.org/*"
+        , "http://ieeexplore.ieee.org/*"
+        , "http://elife.elifesciences.org/content/*"
+         , "http://pubs.rsc.org/en/content/*"
+         ],
  "page_action": {
    "default_icon": "default.png",
    "default_title": "Paper server"

@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell,MultiParamTypeClasses,TypeFamilies #-}
+
 module Foundation where
 
 import Prelude
@@ -12,8 +14,6 @@ import Network.HTTP.Conduit (Manager)
 import qualified Settings
 import Settings.Development (development)
 import qualified Database.Persist
--- import Database.Persist.Sql (SqlPersistT)
--- import Settings.StaticFiles
 import Database.Persist.MongoDB hiding (master)
 import Settings (widgetFile, Extra (..))
 import Model
@@ -112,6 +112,7 @@ instance Yesod App where
             | development = "autogen-" ++ base64md5 lbs
             | otherwise   = base64md5 lbs
 
+--    isAuthorized AddFromBookmarkletR _ = return Authorized
     isAuthorized (AuthR _) _ = return Authorized
     isAuthorized WelcomeR _ = return Authorized
     isAuthorized WelcomeMobileR _ = return Authorized

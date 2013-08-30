@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 --
 -- NatureCommon.hs
 --
@@ -8,10 +10,8 @@
 module Parser.Publisher.NatureCommon where
 
 import Parser.Import
--- import Safe
--- import Data.Maybe
 import Text.XML.Cursor
-import Parser.Utils (inner,(<||>))
+import Parser.Utils (inner,innert,(<||>))
 import qualified Data.Text as T
 
 import Control.Applicative ((<|>))
@@ -53,5 +53,5 @@ _year _ cur =
 
 _authors _ c = getMeta "dc.creator" c <||> getMeta "DC.creator" c
 
-_articleType _ c = (headm . getMeta "prism.section") c <|> (maybeText . innerText . queryT [jq| h1.page-header |]) c
+_articleType _ c = (headm . getMeta "prism.section") c <|> (innert . queryT [jq| h1.page-header |]) c
 

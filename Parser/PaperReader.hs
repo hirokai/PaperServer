@@ -13,29 +13,20 @@ module Parser.PaperReader (
 ) where
 
 import Parser.Import
--- import Data.List
--- import Data.Maybe
--- import qualified Data.Map as M
--- import Safe
 import Control.Applicative
--- import Control.Monad (mzero)
 import Control.Lens hiding ((.=))
 
 import Data.Text (Text)
 import qualified Data.Text as T
--- import qualified Data.Text.IO as TIO
 import Data.Text.Lazy (fromStrict)
 import Data.Text.Lazy.Encoding (encodeUtf8)
 
 import qualified Text.HTML.DOM as H
 import Text.XML.Cursor
 import Text.XML (Document)
--- import Text.XML.Selector (maybeText)
 
 import Data.Tree
 import Text.HTML.SanitizeXSS
-
--- import Data.Aeson
 
 import Parser.Publisher.ACS
 import Parser.Publisher.NatureL
@@ -51,11 +42,8 @@ import Parser.Publisher.Wiley
 import Parser.Publisher.PNAS
 import Parser.Publisher.AnnualRev
 import Parser.Publisher.Rockfeller
+import Parser.Publisher.Generic
 
--- import System.IO
-
-
--- import qualified Data.ByteString.Base64 as B64 (encode)
 
 -- Some functions in this module return a list of possible readers.
 -- Some just choose the first one, so the order matters in some cases.
@@ -72,7 +60,8 @@ readerList = [acsAReader,acsLReader,
               pnasReader,jImmunolReader,
               annualRevReader,
               rupressReader,
-              plosReader]
+              plosReader
+              , genericReader]
 
 -- This is the primary function.
 parseHtml :: Url -> Text -> IO (Maybe Paper)

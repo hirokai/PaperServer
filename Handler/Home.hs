@@ -1,4 +1,4 @@
-{-# LANGUAGE TupleSections, OverloadedStrings, DoAndIfThenElse #-}
+{-# LANGUAGE TupleSections, OverloadedStrings, DoAndIfThenElse,TemplateHaskell #-}
 module Handler.Home where
 
 import Import
@@ -8,23 +8,13 @@ import Handler.Form
 import Handler.Utils(requireAuthId')
 import Data.FileEmbed
 
--- import Data.ByteString(ByteString)
 import Data.Text.Encoding (decodeUtf8)
 
 import Data.List (find)
--- import Data.Maybe
 import qualified Data.ByteString as BS
 import Network.Wai
 
 import Text.Blaze.Html (preEscapedToHtml)
-
--- This is a handler function for the GET request method on the HomeR
--- resource pattern. All of your resource patterns are defined in
--- config/routes
---
--- The majority of the code you will write in Yesod lives in these handler
--- functions. You can spread them across multiple files if you are so
--- inclined, or create a single monolithic file.
 
 
 optionsAuthR :: Handler RepPlain
@@ -34,7 +24,7 @@ optionsAuthR = do
     setHeader "Access-Control-Allow-Methods" "GET, OPTIONS"
     return $ RepPlain $ toContent ("" :: Text)
 
-getHomeR :: Handler RepHtml
+getHomeR :: Handler Html
 getHomeR = do
   mu <- maybeAuthId
   mobile <- isMobile
@@ -45,7 +35,7 @@ getHomeR = do
       (Nothing,False) -> WelcomeR
       (Nothing,True) -> WelcomeMobileR
 
-getStartR :: Handler RepHtml
+getStartR :: Handler Html
 getStartR = do
   mobile <- isMobile
   redirect $ if mobile then PaperListMobileR else PaperListR
@@ -58,13 +48,13 @@ isMobile = do
   let mua = fromMaybe ("","") $ find (\(k,v) -> k == "User-Agent") hs
   return $ any (\s -> s `BS.isInfixOf` (snd mua)) ["Android","iPhone","iPad","iPod"]
   
-getWelcomeR :: Handler RepHtml
+getWelcomeR :: Handler Html
 getWelcomeR = nowrapLayout $(widgetFile "welcome")
 
-getWelcomeMobileR :: Handler RepHtml
+getWelcomeMobileR :: Handler Html
 getWelcomeMobileR = nowrapLayout $(widgetFile "welcome_mobile")
 
-getSignUpR :: Handler RepHtml
+getSignUpR :: Handler Html
 getSignUpR = do
   email <- requireAuthId'
   -- (widget, enctype) <- generateFormPost signUpForm
@@ -85,11 +75,11 @@ getSignUpR = do
 isThisUserAllowed :: Text -> Handler Bool
 isThisUserAllowed _ = return True
 
-getUnregisteredR :: Handler RepHtml
+getUnregisteredR :: Handler Html
 getUnregisteredR = nowrapLayout $(widgetFile "not_registered_user")
 
 
-postConfirmSignUpR :: Handler RepHtml
+postConfirmSignUpR :: Handler Html
 postConfirmSignUpR = do
   ((result, widget), enctype) <- runFormPost (confirmRegisterF "")
   case result of
@@ -105,3 +95,6 @@ postConfirmSignUpR = do
 
 policyText :: Text
 policyText = decodeUtf8 $(embedFile "config/policy_embed.html")
+
+
+

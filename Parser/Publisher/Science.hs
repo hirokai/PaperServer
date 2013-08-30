@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 -----------------------------------------------------------------------------
 --
 -- Module      :  Model.PaperReader.Science
@@ -23,7 +25,6 @@ module Parser.Publisher.Science (
 ) where
 
 import Parser.Import
--- import Safe
 import Parser.Utils
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL

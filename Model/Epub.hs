@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings,TemplateHaskell #-}
 module Model.Epub (
   epubFromPaper
 ) where
@@ -12,14 +12,10 @@ import Data.Time
 
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
--- import qualified Data.ByteString.Char8
 import Data.String
 import qualified Data.Text as T
--- import Data.Tree
 import Data.Text.Encoding
 
--- import Data.Maybe
--- import Control.Monad (forM_,mapM_)
 import Control.Lens
 
 import Text.Blaze
@@ -29,8 +25,6 @@ import qualified Text.Blaze.XHtml5 as H
 import qualified Text.Blaze.XHtml5.Attributes as A
 import Text.Blaze.Html.Renderer.Utf8
 
--- import Handler.Utils (getResourceId)
--- import Model (Paper)
 import Model.PaperReader
 import Model.PaperP (renderStructured)
 import Parser.Paper as P hiding (Paper,Url)

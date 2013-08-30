@@ -8,44 +8,13 @@
 module Model.PaperP where
 
 import Import hiding (Citation, Reference,Resource,Figure)
--- import qualified Model
--- import Model.Defs
--- import Data.Text (Text)
--- import Data.ByteString (ByteString)
-
--- import Data.Maybe
--- import Control.Applicative
 
 import Data.Tree
--- import Data.Aeson
--- import Data.Aeson.TH
-
--- import Text.Blaze
 import qualified Text.Blaze.XHtml5 as H hiding (map)
--- import qualified Text.Blaze.XHtml5.Attributes as A
--- import Text.Blaze.Renderer.Utf8
-
 import qualified Parser.Paper as P  -- So P.Paper means Paper from the parser.
 
 import Model
--- import Model.PaperReaderTypes
-
--- import Data.Maybe
--- import Data.Text (Text)
 import qualified Data.Text as T
--- import Data.ByteString (ByteString)
--- import qualified Data.ByteString as B
--- import Data.Char (toLower)
-
--- import Data.Maybe
--- import Control.Applicative
--- import Data.Tree
-
--- import Data.Aeson
--- import Data.Aeson.TH
-
--- import Text.XML.Cursor
--- import Text.XML.Selector (maybeText)
 
 type PaperP = P.Paper
 

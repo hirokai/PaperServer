@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 -----------------------------------------------------------------------------
 --
 -- Module      :  Model.PaperReader.Elsevier
@@ -22,7 +24,6 @@ module Parser.Publisher.Elsevier (
 --
 
 import Parser.Import
--- import Safe
 import Text.XML
 import Text.XML.Cursor as C
 
@@ -30,6 +31,7 @@ import Control.Applicative ((<|>))
 import Text.Parsec hiding ((<|>))
 import Text.Parsec.Text
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import Parser.Utils
 
 import Control.Lens
@@ -92,7 +94,7 @@ _title _ = inner . queryT [jq| h1.svTitle |]
 _mainHtml _ = fmap FlatHtml . render . removeTags ["script"] . noFig . map node . queryT [jq|.svArticle |]
 _abstract _ c = (inner . queryT [jq|#first-paragraph|]) c <|> (inner . queryT [jq|div.svAbstract p|]) c
 
-_doi _ = T.drop 18 . innerText . query "#ddDoi"
+_doi _ = T.drop 18 . TL.toStrict . innerText . query "#ddDoi"
 
 -- _journal _ = maybeText . innerText . queryT [jq|div.title span|]
 _journal _ = (^.citationJournal) . cit
@@ -104,7 +106,7 @@ _pageTo _ c = (^.citationPageTo) (trace (show (cit c)) $ cit c)
 _year _ = (^.citationYear) . cit              
 
 _authors _ = (^.citationAuthors) . cit
-_articleType _ = maybeText . T.strip . innerText . queryT [jq| p.article-type |]
+_articleType _ = maybeText . TL.toStrict . TL.strip . innerText . queryT [jq| p.article-type |]
 _publisher _ _ = Just "Elsevier"
 _refs _ _ = []
 _figs _ _ = []
@@ -125,7 +127,7 @@ cit c = case citTxt c of
 
 cit2 c =
   let
-    txt = innerText $ queryT [jq| p.volIssue |] c
+    txt = TL.toStrict $ innerText $ queryT [jq| p.volIssue |] c
   in
     case parse p "" txt of
       Left err -> emptyCitation

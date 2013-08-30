@@ -1,5 +1,5 @@
 name:              PaperServer
-version:           0.10.0
+version:           0.10.1
 license:           GPL
 cabal-version:     >= 1.8
 build-type:        Simple
@@ -30,6 +30,7 @@ library
                      Handler.Widget
                      Handler.Utils
                      Handler.Form
+                     Handler.Activity
                      Model.Defs
                      Model.Epub
                      Model.PaperReader
@@ -58,35 +59,27 @@ library
                      Parser.Publisher.Rockfeller
                      Parser.Publisher.Science
                      Parser.Publisher.Wiley
+                     Parser.Publisher.Generic
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
-        ghc-options:   -Wall -O0
+        ghc-options:   -Wall
     else
-        ghc-options:   -O2
+        ghc-options:   -threaded
 
-    extensions: TemplateHaskell
-                QuasiQuotes
-                OverloadedStrings
-                NoImplicitPrelude
-                CPP
-                MultiParamTypeClasses
-                TypeFamilies
-                GADTs
-                GeneralizedNewtypeDeriving
-                FlexibleContexts
-                EmptyDataDecls
-                NoMonomorphismRestriction
-                DeriveDataTypeable
+    extensions:
+        OverloadedStrings
+        NoImplicitPrelude
+        DoAndIfThenElse
+
 
     build-depends: base                          >= 4          && < 5
-                 -- , yesod-platform                >= 1.1        && < 1.2
                  , yesod                         >= 1.2        && < 1.3
                  , yesod-core                    >= 1.2        && < 1.3
                  , yesod-auth                    >= 1.2        && < 1.3
                  , yesod-static                  >= 1.2        && < 1.3
                  , yesod-form                    >= 1.3        && < 1.4
-                 , bytestring                    >= 0.9        && < 0.11
+                 , bytestring                    >= 0.10.0.1   && < 0.11
                  , text                          >= 0.11       && < 0.12
                  , persistent                    >= 1.2        && < 1.3
                  , persistent-mongoDB            >= 1.2        && < 1.3
@@ -110,11 +103,9 @@ library
                  , fast-logger                   >= 0.3
                  , safe
                  , base64-bytestring
---                 , data-default
                  , containers
                  , xml-conduit
                  , html-conduit
---                 , aeson
                  , SHA
                  , blaze-markup
                  , parsec
@@ -122,13 +113,9 @@ library
                  , blaze-html
                  , rex
                  , uuid >= 1.2.6
---                 , bytestring
---                 , vector
-                 , dom-selector
+                 , dom-selector                 >= 0.2
                  , filepath
---                 , random
                  , process
---                 , utf8-string
                  , hashable
                  , file-embed
                  , lens
@@ -136,6 +123,11 @@ library
                  , xss-sanitize
                  , bson  >= 0.2.2
                  , wai
+                 , hastache
+                 , syb
+                 , basic-prelude
+                 , unordered-containers
+                 , attoparsec
 
 executable         PaperServer
     if flag(library-only)

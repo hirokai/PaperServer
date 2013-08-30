@@ -65,11 +65,18 @@
     <div #info-div-refs .modal-tabs>
       <ul>
         $forall ref <- refs
-          <li>#{referenceRefName ref} : #{fromMaybe "" $ referenceCitText ref}
+          <li>
+            $maybe doi <- (referenceCit ref >>= citationDoi)
+              <a href=#{T.append "http://dx.doi.org/" doi}>
+                #{referenceRefName ref} : #{fromMaybe "" $ referenceCitText ref}
+            $nothing
+              #{referenceRefName ref} : #{fromMaybe "" $ referenceCitText ref}
     <div #info-div-history .modal-tabs>
       Coming soon...
     <div #info-div-details .modal-tabs>
       <div>
+        <button #button-pubmed .btn-small .btn>
+          Reload info from Pubmed
         <button #button-reparse .btn-small .btn>
           Reparse
         <h4>

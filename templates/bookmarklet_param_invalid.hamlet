@@ -1,0 +1,5 @@
+<div>
+  Parameter is invalid.
+<script>
+   window.width = 300;
+   window.height = 200;

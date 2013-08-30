@@ -1,0 +1,5 @@
+<div>
+  New paper was added.
+<script>
+   window.width = 300;
+   window.height = 200;

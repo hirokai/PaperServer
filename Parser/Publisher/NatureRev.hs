@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 -----------------------------------------------------------------------------
 --
 -- Module      :  Model.PaperReader.NatureRev
@@ -71,7 +73,7 @@ _year _ = fmap (read . T.unpack . T.take 4) . headm . getMeta "prism.publication
 _readerName _ = "Nature reviews"
 
 _abstract _ = inner . queryT [jq| p.lead |]
-_mainHtml _ = fmap FlatHtml . maybeText . toStrict . renderNodes . removeQuery ".figure-table" . map node . queryT [jq| #articlebody |]
+_mainHtml _ = fmap FlatHtml . render . removeQuery ".figure-table" . map node . queryT [jq| #articlebody |]
 
 _refs _ = map extract . zip [1..] . queryT [jq| ol.references > li|]
 
@@ -101,7 +103,7 @@ _figs _ cur =
     mkFig c =
       let
         id_ = eid $ node c
-        name = (maybeText $ (T.intercalate " " . take 2 . T.splitOn " " . innerText . element "h5") c) <|> id_
+        name = (maybeText $ (T.intercalate " " . take 2 . T.splitOn " " . toStrict . innerText . element "h5") c) <|> id_
         cap = render . removeQueries ["img.thumb","span.cleardiv","ul.options"] . (:[]) . node $ c 
         img = do
           e <- headMay $ queryT [jq| img.thumb |] c

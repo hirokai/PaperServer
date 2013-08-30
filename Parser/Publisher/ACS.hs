@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 --
 -- Parser.ACS
 -- 4 journals: "ja","am","cb","jo"
@@ -23,13 +25,9 @@ import Text.Parsec
 import Parser.Utils
 import Control.Lens
 import Data.Tree
--- import Safe
--- import System.IO
--- import Control.Applicative hiding ((<|>))
--- import Control.Monad
 import qualified Data.Map as M
 import Settings
--- import Parser.Utils
+import Debug.Trace
 
 _acsReader = defaultReader {
   supportedUrl = _supportedUrl,
@@ -179,7 +177,7 @@ getSections doc =
   let
     sec1 = queryT [jq| div.NLM_sec_level_1 |] doc
     sec1_titles = catMaybes $ map (headMay . queryT [jq| > h2 |]) sec1
-    sec1_titles_str = map (innerText . (:[])) sec1_titles
+    sec1_titles_str = map (TL.toStrict . innerText . (:[])) sec1_titles
   in
     case sec1_titles_str of
       [] -> Nothing
@@ -197,12 +195,11 @@ _pageTo r c = snd ps
 _abstract _ c = do
   txt <- inner $ queryT [jq|#abstractBox p|] c
   let
-    url_raw_m = do
-      e <- headMay $ (queryT [jq| div.figure img |] c) <||> (queryT [jq| div#absImg img |] c)
-      headMay $ attribute "src" e
     urlm = do
-      raw <- url_raw_m
-      return $ (T.pack resourceRootUrl) `T.append` (mkFileNameTxt ("http://pubs.acs.org" `mappend` raw))
+      e <- headMay $ (queryT [jq| div.figure img |] c) <||> (queryT [jq| div#absImg img |] c)
+      raw <- headMay $ attribute "src" e
+    --  raw <- traceShow url_raw_m url_raw_m
+      return $ (T.pack resourceRootUrl) `T.append` (mkFileNameTxt ("http://pubs.acs.org" `T.append` raw))
   return $ T.append
                (maybe "" (\t -> T.concat ["<div alt='Graphical abstract' class='absfig'><img src='",t,"'/></div>"]) urlm)
                txt
@@ -243,9 +240,10 @@ _refs _ c = map mkRef $ Data.List.concat li
       a :: Cursor -> Maybe Cursor
       a = headm . queryT [jq| div.citationLinks a |]
       getDoi :: Cursor -> Maybe T.Text
-      getDoi c | isJust ac = (headm $ attribute "href" (fromJust ac)) >>= extHref
-                | otherwise = Nothing
-        where ac = a c
+      getDoi c =
+        case a c of
+          Just ac -> (headm $ attribute "href" ac) >>= extHref
+          Nothing -> Nothing
       extHref :: T.Text -> Maybe T.Text
       extHref s = maybeText $ decodeUrl $ last $ T.splitOn "&key=" s
 
