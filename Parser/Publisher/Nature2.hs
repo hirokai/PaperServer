@@ -37,6 +37,8 @@ import Control.Applicative((<|>),(<$>),(<*>))
 
 import Data.Tree
 import Control.Lens hiding (element)
+import qualified Parser.Lens as L
+
 
 import Settings
 import Parser.Utils
@@ -134,7 +136,7 @@ nature2ParsePaper r url html doc = do
     rootCur = fromDocument doc
     sec = getSections rootCur
     -- resources = getResources rootCur
-  return $ paper & paperSections .~ sec -- & paperResources .~ resources
+  return $ paper & L.sections .~ sec -- & paperResources .~ resources
 
 
 -- Copied from ACS.hs and modified.
@@ -303,7 +305,7 @@ _refs _ cur =
       = Reference
             (refid as)
             (refname as)
-            (Just emptyCitation{_citationDoi=getDoi (url n)})
+            (Just $ def & L.doi .~ getDoi (url n))
             (Just (txt cs))
             (url n)
     refid as = fromMaybe "" (M.lookup "id" as)

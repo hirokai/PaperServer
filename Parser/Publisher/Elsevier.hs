@@ -33,8 +33,9 @@ import Text.Parsec.Text
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Parser.Utils
-
+import qualified Parser.Lens as L
 import Control.Lens
+
 
 _elsevierReader = defaultReader {
   supportedUrl = _supportedUrl,
@@ -97,15 +98,15 @@ _abstract _ c = (inner . queryT [jq|#first-paragraph|]) c <|> (inner . queryT [j
 _doi _ = T.drop 18 . TL.toStrict . innerText . query "#ddDoi"
 
 -- _journal _ = maybeText . innerText . queryT [jq|div.title span|]
-_journal _ = (^.citationJournal) . cit
+_journal _ = (^.L.journal) . cit
 
-_volume _ = (^.citationVolume) . cit
+_volume _ = (^.L.volume) . cit
 
-_pageFrom _ = (^.citationPageFrom) . cit
-_pageTo _ c = (^.citationPageTo) (trace (show (cit c)) $ cit c)
-_year _ = (^.citationYear) . cit              
+_pageFrom _ = (^.L.pageFrom) . cit
+_pageTo _ c = (^.L.pageTo) (trace (show (cit c)) $ cit c)
+_year _ = (^.L.year) . cit              
 
-_authors _ = (^.citationAuthors) . cit
+_authors _ = (^.L.authors) . cit
 _articleType _ = maybeText . TL.toStrict . TL.strip . innerText . queryT [jq| p.article-type |]
 _publisher _ _ = Just "Elsevier"
 _refs _ _ = []
@@ -130,27 +131,28 @@ cit2 c =
     txt = TL.toStrict $ innerText $ queryT [jq| p.volIssue |] c
   in
     case parse p "" txt of
-      Left err -> emptyCitation
+      Left err -> def
       Right (v,pf,pt,y) ->
-        emptyCitation{_citationVolume = Just v,_citationPageFrom=Just pf,
-          _citationPageTo=Just pt,_citationYear=Just y}
+        def & L.volume .~ Just v
+            & L.pageFrom .~ Just pf
+            & L.pageTo .~ Just pt
+            & L.year .~ Just y
 
 ------
 parseCit :: [T.Text] -> Citation
 parseCit ts | length ts == 6
-              = emptyCitation
-                          {_citationTitle=Just (ts!!0),_citationAuthors=T.splitOn ", " (ts!!1),
-                            _citationJournal=Just (ts!!3),
-                            _citationVolume=fmap vol c,_citationDoi=Just doi,_citationPageFrom=fmap pf c,
-                            _citationPageTo=fmap pt c,_citationYear=fmap year c}
-            | otherwise = emptyCitation
+              = (def :: Citation)
+                  & L.title .~ Just (ts!!0)
+                  & L.authors .~ T.splitOn ", " (ts!!1)
+                  & L.journal .~ Just (ts!!3)
+                  & L.volume .~ fmap (^._1) c
+                  & L.doi .~ Just (T.drop 5 (ts!!5))
+                  & L.pageFrom .~ fmap (^._2) c
+                  & L.pageTo .~ fmap (^._3) c
+                  & L.year .~ fmap (^._4) c
+            | otherwise = def :: Citation
   where
-    doi = T.drop 5 (ts!!5)
-    c = trace (show ts) $ either (const Nothing) Just (parse p "" (ts!!4))
-    vol (v,_,_,_) = v
-    pf (_,p,_,_) = p
-    pt (_,_,p,_) = p
-    year (_,_,_,y) = y
+    c = either (const Nothing) Just (parse p "" (ts!!4))
 
 
 p :: Parser (T.Text,T.Text,T.Text,Int)

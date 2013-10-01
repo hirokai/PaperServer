@@ -3,11 +3,12 @@ div#maindiv {
   top: 45px;
   left: 10px;
   width: auto;
-  margin: 10px;
+  margin: 50px 10px 10px 10px;
   height: 600px;
   margin-bottom: 10px ! important;
   padding-bottom: 10px;
 }
+
 
 #list {
   height: 600px;
@@ -17,7 +18,7 @@ div#maindiv {
 //    height: 30px;
 //    min-height: 30px;
 //    max-height: 30px;
-    overflow: scroll;
+   // overflow: scroll;
   }
   .title {
     width: 300px;
@@ -30,7 +31,7 @@ div#maindiv {
     width: 300px;
   }
   .view {
-    width: 50px;
+    width: 120px;
   }
   .availability {
     width: 20px;
@@ -41,11 +42,69 @@ div#maindiv {
   a {
     cursor: pointer;
   }
+  a.remove-entry {
+  color:red;
+  }
+  a.pdf-link {
+    text-decoration: none;
+  }
+  .label-pdf-link {
+    background-color: purple;
+  }
 }
 
+#remove-confirm .title-placeholder {
+  font-weight: bold;
+}
+
+#info-window .modal-body {
+  width: 800px;  
+  #info-table {
+    .key {
+      width: 120px;
+    }
+    .value {
+      width: 700px;
+    }
+    td {
+      padding-bottom: 10px;
+    }
+  }
+  .tags {
+    width: 100%;
+    float:left;
+      li {
+        display: inline;
+      }
+  }
+  #input-comment{
+    width: 100%;
+    height: 70px;
+  }
+}
+
+#statusbar {
+  display: none;
+  position: fixed;
+  background: #ccc;
+  bottom: 0px;
+  width: 100%;
+  height: 30px;
+  margin: 0px;
+  padding: 5px 10px; 
+}
+
+#tools-button {
+  display: inline;
+  margin: 0px 10px 0px 0px;
+}
 
 .hidden {
   display: none;  
+}
+
+td.drag-hover {
+  background: pink;
 }
 
 ul.stacked {

@@ -12,12 +12,14 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import qualified Data.Text.Lazy as TL
 
-import Data.Text.Lazy.Encoding
+import Data.Text.Lazy.Encoding as TL
+import Data.Text.Encoding as T
 
 import Safe
 
+import Text.XML as X (Document)
 import qualified Data.Aeson as Ae
-import Data.Aeson.Types (parseMaybe)
+
 import qualified Model.PaperReader as PR
 import Text.Blaze.Html.Renderer.Text
 
@@ -26,10 +28,17 @@ import Handler.Form
 import Handler.Utils
 import Handler.Render
 
+
+import qualified Data.ByteString.Base64.URL as Base64 (decode)
+
+import Model.Pubmed
+import Model.RIS
+
 import Model.PaperP
 import Model.PaperMongo
 
 import Control.Lens hiding ((.=))
+import qualified Parser.Lens as L
 
 import qualified Parser.Paper as P
 import Parser.PaperReader (readerFromHtml,readerFromUrl,parseHtml)
@@ -37,11 +46,6 @@ import Parser.PaperReaderTypes
 
 import Data.Time.Clock
 
-import Text.XML as X
-import Text.XML.Cursor as C
-import Text.XML.Selector
-import Text.XML.Selector.TH
-import Text.XML.Scraping
 
 import Control.Applicative
 import Debug.Trace
@@ -60,6 +64,17 @@ instance YesodNic App
 
 
 --FIXME: All runDB functions should be changed to raw mongo.
+
+getPaperJsonR :: PaperId -> Handler TypedContent
+getPaperJsonR pid = do
+  email <- requireAuthId'
+  mp <- getPaperDB email pid
+  case mp of
+    Just p -> return $ toTypedContent (toJSON p)
+    Nothing -> return $ toTypedContent $ object ["success" .= False, "message" .= ("Paper ID not found."::Text)]
+
+
+postPaperJsonR = getPaperJsonR
 
 postAddUrlR :: Handler TypedContent
 postAddUrlR = do
@@ -84,9 +99,7 @@ postAddFromBookmarkletR = do
     (Just u,Just h) -> addIfNotExistBookmarklet email u h
     _ -> selectRep $ provideRep $ nowrapLayout $(widgetFile "bookmarklet_param_invalid")
 
--- This returns HTML
--- ToDo: Currently this uses URL for identity, but there may be a better choice.
--- DOI is not good, because the abstract and fulltext (SAbstract and SFullText) have the same DOI.
+
 addIfNotExistBookmarklet :: Text -> Text -> Text -> Handler TypedContent
 addIfNotExistBookmarklet email url html = do
   res <- getPaperByUrl email url
@@ -94,187 +107,106 @@ addIfNotExistBookmarklet email url html = do
     Just (pid,paper) ->
       selectRep $ provideRep $ nowrapLayout $(widgetFile "bookmarklet_paper_exists")
     Nothing -> do
-      json <- doAdd email url html
-      return $ toTypedContent json
+      mp <- htmlToPaper url html
+      case mp of
+        Just (pp,p) -> addIfNotExist email url html Nothing
+        Nothing -> return $ failureJSON "Parsing cannot be done."
       -- selectRep $ provideRep $ nowrapLayout $(widgetFile "bookmarklet_paper_added")
 
 
-{-}
-optionsAddFromBookmarkletR :: Handler RepPlain
-optionsAddFromBookmarkletR = do
-    -- ToDo: Add other sites.
-    setHeader "Access-Control-Allow-Headers" "Origin, Access-Control-Allow-Origin, X-Requested-With, Content-Type, Accept"
-    setHeader "Access-Control-Allow-Origin" "*"
-    setHeader "Access-Control-Allow-Methods" "PUT, OPTIONS"
-    return $ RepPlain $ toContent ("" :: Text)
- -}
-
-
 -- |Entry point for adding a paper.
--- |This uses two POST params, url and html.
+-- |POST params:
+-- |url: Text, html: Text, serverside: Bool, parsed: stringified JSON
 postAddPaperR :: Handler TypedContent
 postAddPaperR = do
   email <- requireAuthId'
   $(logInfo) $ T.append "postAddPaperR from: " email
   [murl,mhtml,mserverside,mparsed] <- mapM lookupPostParam ["url","html","serverside","parsed"]
-  -- $(logInfo) $ T.concat [fromMaybe "Nothing" url, " ", fromMaybe "Nothing" html]
---  liftIO $ print (murl,isJust mhtml,mserverside,mparsed)
   case (murl,mhtml,mserverside,mparsed) of
-    (Just u,Just h,Just "false",Just jsontxt) -> addIfNotExistWithParsed email u h jsontxt
-    (Just u,Just h,_,_) -> addIfNotExist email u h
+    (Just u,Just h,Just "false",Just jsontxt) -> do
+      mp <- jsonTxtToPaper jsontxt
+      addIfNotExist email u h mp
+    (Just u,Just h,_,_) -> do
+      mp <- htmlToPaper u h     
+      addIfNotExist email u h mp
     _ -> return $ toTypedContent $ object ["success" .= False,"message" .= ("Params are incomplete." :: Text)]
 
 
-addIfNotExistWithParsed :: Text -> Text -> Text -> Text -> Handler TypedContent
-addIfNotExistWithParsed email url html jsontxt = do
-  res <- getPaperByUrl email url
+-- Add a re-parsed content from client.
+postUpdatePaperR :: Handler TypedContent
+postUpdatePaperR = do
+  email <- requireAuthId'
+  $(logInfo) $ T.append "postUpdatePaperR from: " email
+  mparsed <- lookupPostParam "parsed"
+  case mparsed of
+    Just jsontxt -> updateWithParsed email jsontxt
+    _ -> return $ toTypedContent $ object ["success" .= False,"message" .= ("Params are incomplete." :: Text)]
+
+-- Ver.0.11 change:
+-- Using DOI as identity. Different version with the same DOI is merged by availability flags.
+addIfNotExist :: Text -> Text -> Text -> Maybe (P.Paper,Paper) -> Handler TypedContent
+addIfNotExist _ _ _ Nothing = return $ toTypedContent $ object ["success" .= False, "message" .= ("Not valid data." :: Text)]
+addIfNotExist email url html (Just (pp,p)) = do
+  let doi = paperDoi p
+  res <- getPaperByDOI email doi
   json <- case res of
-    Just (pid,paper) ->
-      return $ object ["success" .= False, "message" .= ("Already exists" :: Text),
-                      "doi" .= (paperDoi paper), "id" .= toPathPiece pid, "summary" .= object (paperSummary pid paper)]
-    Nothing -> doAddParsed email url html jsontxt
+    Just (present_id,present) -> do
+      let ResourceAvailability cit abs full fig ref toc = paperAvailable present
+      if not (cit && abs && full && fig && ref && toc) then
+        doAdd email url html (Just (present_id, present)) pp p
+      else
+        return $ object ["success" .= False, "message" .= ("Already exists" :: Text),
+                      "doi" .= (paperDoi present), "id" .= toPathPiece present_id,
+                      "summary" .= object (paperSummary present_id present)]
+    Nothing -> doAdd email url html Nothing pp p
   return $ toTypedContent json
 
--- ToDo: Currently this uses URL for identity, but there may be a better choice.
--- DOI is not good, because the abstract and fulltext (SAbstract and SFullText) have the same DOI.
-addIfNotExist :: Text -> Text -> Text -> Handler TypedContent
-addIfNotExist email url html = do
-  res <- getPaperByUrl email url
-  json <- case res of
-    Just (pid,paper) ->
-      return $ object ["success" .= False, "message" .= ("Already exists" :: Text),
-                      "doi" .= (paperDoi paper), "id" .= toPathPiece pid, "summary" .= object (paperSummary pid paper)]
-    Nothing -> doAdd email url html
-  return $ toTypedContent json
+htmlToPaper :: Url -> Text -> Handler (Maybe (P.Paper,Paper))
+htmlToPaper url html = do
+  mnewpp <- liftIO $ parseHtml url html
+  let mnewp = fmap paperPToPaper mnewpp  -- Take out Paper from PaperP
+  case mnewpp of
+    Just newpp -> do
+      time <- liftIO $ getCurrentTime
+      return $ Just $ (newpp, (paperPToPaper newpp) {paperTimeAdded=time})
+    Nothing -> return Nothing
 
-doAddParsed :: Text -> Text -> Text -> Text -> Handler Value
-doAddParsed email url html jsontxt = do
-  let mjson = Ae.decode (encodeUtf8 $ TL.fromStrict jsontxt)
-  liftIO $ print mjson
+jsonTxtToPaper :: Text -> Handler (Maybe (P.Paper,Paper))
+jsonTxtToPaper jsontxt = do
+  let mjson = Ae.decode (TL.encodeUtf8 $ TL.fromStrict jsontxt)
   let mnewpp = mjson >>= parseJsonFromClient
   case mnewpp of
     Just newpp -> do
-      $(logInfo) $ "Received parsed JSON from client."
       time <- liftIO $ getCurrentTime
-      let newp = paperPToPaper newpp
-      pid <- runDB $ insertUser email newp {paperTimeAdded=time}
-      $(logInfo) "Paper added to DB"
-      saveFormattedCache FormatB pid newpp   -- Stub: Also change reparse.
-      time <- liftIO $ getCurrentTime
-      let history = History (Just pid) HACreate time (User email Nothing Nothing) Nothing
-      _ <- runDB $ insertUserH email history
-      return $ object ["success" .= True, "summary" .= object (paperSummary pid newp)]
-    _ -> return $ object ["success" .= False, "message" .= ("JSON from client: parse error." :: Text), "url" .= url]
+      return $ Just $ (newpp, (paperPToPaper newpp) {paperTimeAdded=time})
+    Nothing -> return Nothing
 
--- Stub
-parseJsonFromClient :: Value -> Maybe P.Paper
-parseJsonFromClient (Object v) =
-  flip parseMaybe v $ \v -> do
-    doi <- v .: "doi"
-    url <- v .: "url"
-    abs <- v .: "abstract"
-    cit <- v .: "citation"
-    return $ P.emptyPaper{P._paperDoi=doi,P._paperUrl=url,P._paperAbstract=abs,
-                            P._paperCitation=(addCitMaybe cit)  -- Maybe is not parsed.:
-                            -- Pitfall: http://hackage.haskell.org/packages/archive/aeson/0.6.1.0/doc/html/Data-Aeson.html
-                          }
+-- Unlike doAdd, this forces update.
+updateWithParsed :: Text -> Text -> Handler TypedContent
+updateWithParsed email jsontxt = do
+  mps <- jsonTxtToPaper jsontxt
+  case mps of
+    Just (pp,p) -> do
+      mp <- getPaperByUrl email (P._paperUrl pp)
+      case mp of
+        Just (pid,paper) -> do
+          -- $(logInfo) $ "updatedWithParsed: success."
+          let html = paperOriginalHtml paper
+          updatePaperDB email pid $ (paperPToPaper pp){paperOriginalHtml=html,paperUserEmail=Just email}
+          let json = object ["success" .= True, "message" .= ("Paper updated."::Text)]
+          return $ toTypedContent $ json
+        Nothing -> do
+          return $ failureJSON "Paper with specified URL is not found."
+    Nothing -> do
+      return $ failureJSON "JSON fields missing or parse failure."
 
-    where
-      addCitMaybe :: CitationNoMaybe -> P.Citation
-      addCitMaybe (CitationNoMaybe a b c d e f g h i j k) =
-        P.Citation (Just a) (Just b) (Just c) (Just d) (Just e) (Just f) (Just g) (Just h) i (Just j) (Just k)
-
-data CitationNoMaybe = CitationNoMaybe Text Text Text Text Int Text Text Text [Text] Text Text
-
-instance FromJSON CitationNoMaybe where
-  parseJSON (Object v) =
-    CitationNoMaybe
-      <$> v .: "doi"
-      <*> v .: "url"
-      <*> v .: "title"
-      <*> v .: "journal"
-      <*> v .: "year"
-      <*> v .: "volume"
-      <*> v .: "pageFrom"
-      <*> v .: "pageTo"
-      <*> v .: "authors"
-      <*> v .: "publisher"
-      <*> v .: "type"
-
-  parseJSON _ = mzero
-
- {- P.Paper
-    <$> v .: "doi"
-    <*> v .: "url"
-    <*> v .: "html"
-    <*> v .: "abstract"
-    <*> v .: "mainHtml"
-    <*> v .: "citation"
-    <*> v .: "references"
-    <*> v .: "figures"
-    <*> v .: "resources"
-    <*> v .: "toc"
-    <*> v .: "misc"
-    <*> v .: "sections" -}
-
-{-
-
-data Paper = Paper {
-  _paperDoi :: Text,
-  _paperUrl :: Text,
-  _paperHtml :: Text,
-  _paperAbstract :: Maybe Text,
-  _paperMainHtml :: Maybe PaperMainText,
-  _paperCitation ::Citation,
-  _paperReferences :: [Reference],
-  _paperFigures ::[Figure],
-  _paperResources :: [Resource],
-  _paperToc :: Maybe Text,
-  _paperTags :: [Text],
-  _paperNote :: Maybe Text,
-  _paperMisc :: ByteString,     -- Not used now.
-  _paperSections :: Maybe SectionInfo,
-  _paperParserInfo :: Maybe Text,
-  -- _paperUserEmail :: Maybe Text
-  _paperSupportLevel :: SupportLevel
-} deriving (Show)
-
--}
-doAdd :: Text -> Text -> Text -> Handler Value
-doAdd email url html = do
-  let mreader = readerFromHtml url html
-  -- liftIO $ TIO.writeFile (CachePath email url) html
-  -- runDB $ deleteWhereUser email [PaperUrl ==. url] -- In case paper exists but no html is found.
-  liftIO $ print (url,isJust mreader)
-  mrep <- case mreader of
-                Just r -> do
-                  $(logInfo) $ T.append "Reader selected: " ((\a -> (readerName a) a) r)
-                  parseAndAdd email r url html
-                Nothing -> do
-                  $(logWarn) "No Reader was found."
-                  return (Nothing,Nothing)
-  return $ case mrep of
-             (Just rep,Just pid) ->
-              let
-                cit = paperCitation rep
-                usePubmed = not . all id $
-                              [isJust (citationJournal cit),
-                              isJust (citationTitle cit),
-                              isJust (citationVolume cit),
-                              isJust (citationYear cit),
-                              isJust (citationPageFrom cit)
-                              ]
-              in
-                object [ "success" .= True, "summary" .= object (paperSummary pid rep),"usePubmed" .= usePubmed]
-             _ -> object [ "success" .= False , "message" .= ("No reader was found." :: String)]
-
-parseAndAdd :: Text -> PaperReader -> Url -> Text -> Handler (Maybe Paper,Maybe PaperId)
-parseAndAdd email _ url html = do
+doAdd :: Text -> Text -> Text -> Maybe (PaperId,Paper) -> PaperP -> Paper -> Handler Value
+doAdd email url html mpresent pp p = do
   mnewpp <- liftIO $ parseHtml url html
   let mnewp = fmap paperPToPaper mnewpp  -- Take out Paper from PaperP
   $(logInfo) $ "Paper got from parser"
-  case mnewp of
-    Just newp -> do
+  res <- case (mpresent,mnewp) of
+    (Nothing,Just newp) -> do
       time <- liftIO $ getCurrentTime
       pid <- runDB $ insertUser email newp{paperTimeAdded=time}
       $(logInfo) "Paper added to DB"
@@ -283,10 +215,33 @@ parseAndAdd email _ url html = do
       let history = History (Just pid) HACreate time (User email Nothing Nothing) Nothing
       _ <- runDB $ insertUserH email history
       return (mnewp,Just pid)
-    Nothing -> do
+    (Just (present_id,present),Just newp) -> do
+      $(logInfo) "Merge paper to DB"
+      paper <- liftIO $ mergeTwoPapers present newp
+      updatePaperDB email present_id paper
+      liftIO $ print present_id
+      return (Just paper,Just present_id)
+    (_,Nothing) -> do
       $(logWarn) $ "Parsing failure."
       return (Nothing,Nothing)
-
+  return $ case res of
+             (Just rep,Just pid) ->
+              let
+                cit = paperCitation rep
+                journal = (citationJournal cit)
+                useGScholar = not . all id $
+                              [isJust journal,
+                              isJust (citationTitle cit),
+                              isJust (citationVolume cit),
+                              isJust (citationYear cit),
+                              isJust (citationPageFrom cit)
+                              ]
+                pubmedCovered j = True -- Stub.
+                usePubmed = useGScholar && (maybe True pubmedCovered journal)
+              in
+                object [ "success" .= True, "summary" .= object (paperSummary pid rep),"usePubmed" .= usePubmed,
+                          "useGScholar" .= useGScholar ]
+             _ -> object [ "success" .= False , "message" .= ("No reader was found." :: String)]
 --
 -- Handlers for checking if the specified paper is supported.
 --
@@ -321,28 +276,14 @@ getRefetchPubmedInfo = do
   mdoi <- lookupGetParam "doi"
   case (mpid >>= fromPathPiece, mdoi) of
     (Just pid,Just doi) -> do
-      let url = T.concat ["http://www.ncbi.nlm.nih.gov/pubmed?term=",doi,"&report=xml&format=text"]
-      liftIO $ print (pid,doi,url)
-      txt <- decodeUtf8 <$> simpleHttp (T.unpack url)
-      let edoc = parseText def txt
-      json <- case edoc of
-                    Right doc ->
-                      doAddPubmedInfo pid (TL.toStrict txt) (adhocFixDoc doc)
-                    _ -> return $ object ["success" .= False]
-      return $ toTypedContent json
+      (minfo,txt) <- liftIO $ pubmedByDOI doi
+      case minfo of
+        Just info -> do
+          doAddPubmedInfo pid (TL.toStrict txt) info
+        _ -> return $ failureJSON "Pubmed fetching/parsing failure."
     _ ->
-      return $ toTypedContent $ object ["success" .= False, "message" .= ("Params are missing."::Text)]
+      return $ failureJSON "Params are missing."
 
-adhocFixDoc :: Document -> Document
-adhocFixDoc doc =
-  maybe doc mkDoc $ L.find isContent $ elementNodes $ documentRoot doc
-  where
-    mkDoc (NodeContent txt) =
-      case parseText def $ TL.fromStrict txt of
-        Right d -> d
-        _ -> doc
-    isContent (NodeContent _) = True
-    isContent _ = False
 
 postAddPubmedInfoR :: Handler TypedContent
 postAddPubmedInfoR = do
@@ -350,75 +291,19 @@ postAddPubmedInfoR = do
   mxmlstr <- fmap decodeXml <$> lookupPostParam "xml"
   -- liftIO $ print xmlstr
   let mpid = mpid' >>= fromPathPiece
-  let mdoc = case mxmlstr of
-                Just xmlstr ->
-                  case parseText def (TL.fromStrict xmlstr) of
-                         Right d -> Just d
-                         _ -> Nothing
-                _ -> Nothing
-  json <- case (mpid,mdoc) of
-            (Just pid,Just doc) ->
-              doAddPubmedInfo pid (fromMaybe "" mxmlstr) doc
-            _ -> return $ object ["success" .= False,"message" .= ("XML parse error."::Text)]
-  return $ toTypedContent json
+  let minfo = mxmlstr >>= pubmedFromXml
+  case (mpid,minfo,mxmlstr) of
+    (Just pid,Just info,Just xmlstr) ->
+      doAddPubmedInfo pid xmlstr info
+    (Just pid,Nothing,Just xmlstr) ->
+      return $ failureJSON "XML parse error (Probably because there is no record on Pubmed)."
+    _ -> return $ failureJSON "Parameters are missing."
 
-doAddPubmedInfo :: PaperId -> Text -> Document -> Handler Value
-doAddPubmedInfo pid txt doc = do
- -- liftIO $ print doc
-  info <- parsePubmedXml doc
-  liftIO $ X.writeFile def (fromString (appRootFolder++"data/pubmed/"++(T.unpack $ pmId info))) doc -- not using txt
+doAddPubmedInfo :: PaperId -> Text -> PubmedInfo -> Handler TypedContent
+doAddPubmedInfo pid txt info = do
+  liftIO $ TIO.writeFile (fromString (appRootFolder++"data/pubmed/"++(T.unpack $ pmId info))) txt
   updatePaperWithPubmed info pid
-  return $ object ["success" .= True]
-
-decodeXml :: Text -> Text
-decodeXml txt = T.replace "&lt;" "<" . T.replace "&gt;" ">" $ txt
-
-data PubmedInfo = PubmedInfo {
-  pmId :: Text,
-  pmTitle :: Maybe Text,
-  pmJournal :: Maybe Text,
-  pmAuthors :: Maybe [Text],
-  pmVolume :: Maybe Text,
-  pmYear :: Maybe Int,
-  pmPageFrom :: Maybe Text,
-  pmPageTo :: Maybe Text
-} deriving (Eq,Show)
-
-parsePubmedXml :: Document -> Handler PubmedInfo
-parsePubmedXml doc = do
-  let
-    c = fromDocument doc
-    title = maybeText $ TL.toStrict $ innerText $ (c $// C.element "ArticleTitle")
-    pubmedId = fromMaybe "NA" $ do
-                  h <- headMay $ (c $// C.element "MedlineCitation" &/ C.element "PMID")
-                  return $ TL.toStrict $ innerText h
-    journal = do
-      h <- headMay (c $// C.element "MedlineCitation" &// C.element "Title")
-      maybeText $ TL.toStrict $ innerText h
-    authors = map mkName $ (c $// C.element "Author")
-    pages = mkPages $ TL.toStrict $ innerText $ (c $// C.element "MedlinePgn")
-    mkPages :: Text -> (Maybe Text,Maybe Text)
-    mkPages txt =
-      let
-        ts = T.splitOn "-" txt
-        pf = atMay ts 0
-        pt = atMay ts 1
-        f from to = (T.take (T.length from - T.length to) from) `T.append` to
-      in
-        (pf, liftA2 f pf pt)
-    mkName :: Cursor -> Text
-    mkName cur =
-      let
-        ln = TL.toStrict $ innerText $ (cur $.// C.element "LastName")
-        fn = TL.toStrict $ innerText $ (cur $.// C.element "ForeName")
-      in
-        T.concat [fn," ",ln]
-    volume = maybeText $ TL.toStrict $ innerText $ (c $// C.element "Volume")
-    year = do
-      c <- headMay $ (c $// C.element "PubDate" &// C.element "Year")
-      readMay $ TL.unpack $ innerText $ c
---  liftIO $ print (title,journal,doc) 
-  return $ PubmedInfo pubmedId title journal (if null authors then Nothing else Just authors) volume year (fst pages) (snd pages)
+  return $ toTypedContent $ object ["success" .= True, "pubmed_id" .= pmId info]
 
 updatePaperWithPubmed :: PubmedInfo -> PaperId -> Handler ()
 updatePaperWithPubmed info pid = do
@@ -436,8 +321,44 @@ updatePaperWithPubmed info pid = do
   let newp = paper {paperCitation=newcit}
 --  liftIO $ print info
 --  liftIO $ print newcit
-  updatePaperDB pid newp
+  updatePaperDB email pid newp
   return ()
+
+-- Adding info from RIS format metainfo.
+postAddGoogleScholarInfoR :: Handler TypedContent
+postAddGoogleScholarInfoR = do
+  email <- requireAuthId'
+  mris <- lookupPostParam "ris"
+  mpid <- lookupPostParam "id"
+  case (mpid >>= fromPathPiece,mris) of
+    (Just pid,Just ris) -> do
+      case parseRIS ris of
+        Just risinfo -> do
+          updatePaperWithRIS risinfo pid
+          return $ toTypedContent $ object ["success" .= True]
+        _ -> return $ failureJSON "RIS file parse failure."
+    _ -> return $ failureJSON "Parameters are missing."
+
+updatePaperWithRIS :: RISInfo -> PaperId -> Handler ()
+updatePaperWithRIS info pid = notFound -- stub: seems the following code has a weird bug that makes random change.
+{-updatePaperWithRIS info pid = do
+  email <- requireAuthId'
+  paper <- getPaperDB404 email pid
+  let cit = paperCitation paper
+  let authors = citationAuthors cit 
+  let newcit = cit {citationJournal=citationJournal cit <|> risJournal info,
+                    citationTitle=citationTitle cit <|> risTitle info,
+                    citationVolume=citationVolume cit <|> risVolume info,
+                    citationYear=citationYear cit <|> risYear info,
+                    citationPageFrom=citationPageFrom cit <|> risPageFrom info,
+                    citationPageTo=citationPageTo cit <|> risPageTo info,
+                    citationAuthors= (if null authors then fromMaybe [] $ risAuthors info else authors)}
+  let newp = paper {paperCitation=newcit}
+--  liftIO $ print info
+--  liftIO $ print newcit
+  updatePaperDB email pid newp
+  return ()
+-}
 
 formHandlerWithIdtext form func = do
   ((result, widget), enctype) <- runFormPost form
@@ -471,12 +392,24 @@ formHandlerWithIdtextAndParams form func = do
 jsonFormError :: Value
 jsonFormError = object ["success" .= False, "message" .= ("Error while processing the form."::String)]
 
+-- single paper removal.
+postRemovePaperR :: PaperId -> Handler TypedContent
+postRemovePaperR pid = do
+  runDB $ delete pid
+  return $ toTypedContent $ object ["success" .= True]
+
 postRemovePapersR :: Handler TypedContent
-postRemovePapersR = formHandlerWithIdtext onetimeTokenF doRemove
+postRemovePapersR = do
+  email <- requireAuthId'
+  idstxt <- lookupPostParam "id"
+  fmap toTypedContent $ doRemove (splitIdText idstxt)
 
 postReparsePapersR :: Handler TypedContent
-postReparsePapersR = formHandlerWithIdtext onetimeTokenF doReparse
-
+postReparsePapersR = do
+  email <- requireAuthId'
+  idstxt <- lookupPostParam "id"
+  fmap toTypedContent $ doReparse (splitIdText idstxt)
+  
 getReparsePaperR :: Handler TypedContent 
 getReparsePaperR = do  -- caution: this is for a single pid, different from postReparsePapersR.
   mpid <- lookupGetParam "id"
@@ -508,8 +441,29 @@ postAddTagsR = formHandlerWithIdtextAndParams onetimeTokenF doAddTags
 postRemoveTagsR = formHandlerWithIdtextAndParams onetimeTokenF doRemoveTags
 
 postReplaceTagsR :: Handler TypedContent
-postReplaceTagsR = formHandlerWithIdtextAndParams onetimeTokenF doReplaceTags
-  
+postReplaceTagsR = do
+  email <- requireAuthId'
+  mpidtxt <- lookupPostParam "id"
+  let mpid = mpidtxt >>= fromPathPiece
+  mtags <- lookupPostParam "tags"
+  let tags = splitParamText mtags
+  $(logInfo) $ T.pack $ show (mpid,mtags) 
+  case (mpid,length tags > 0) of
+    (Just pid,True) -> toTypedContent <$> doReplaceTags [pid] tags
+    _ -> return $ failureJSON "You need id and tags params."
+
+-- paperMisc field update. This is used with stringified JSON.
+postReplaceMiscR :: Handler TypedContent
+postReplaceMiscR = do
+  email <- requireAuthId'
+  mpidtxt <- lookupPostParam "id"
+  let mpid = mpidtxt >>= fromPathPiece
+  mjsontxt <- lookupPostParam "json"
+  case (mpid,mjsontxt) of
+    (Just pid,Just jsontxt) -> do
+      runDB $ updateWhere [PaperId ==. pid, PaperUserEmail ==. Just email] [PaperMisc =. T.encodeUtf8 jsontxt]
+      return $ toTypedContent $ object ["success" .= True, "message" .= ("Information changed." :: Text)]
+    _ -> return $ failureJSON "Params are not valid."
 
 -- Actions
 -- These are called from post***R functions.
@@ -535,7 +489,7 @@ doReparse pids = do
           return $ object ["success" .= True,
                        "action" .= ("Reparse"::String),
                        "ids" .= map toPathPiece pids,
-                       "citation" .= (rep^.P.paperCitation)
+                       "citation" .= (rep^.L.citation)
                        ]
         Nothing ->
           return $ object ["success" .= False, "message" .= ("Original HTML cache is missing (or you just added a citation, not full text.).":: String)]
@@ -572,14 +526,14 @@ doAddTags ids tags = do
       Just paper -> do
         let newtags = L.union (paperTags paper) tags
         let newpaper = paper{paperTags=newtags}
-        updatePaperDB pid newpaper
+        updatePaperDB email pid newpaper
         return newtags
       Nothing ->
         return []
   let html = case (headMay ids,headMay updatedtags) of
             (Just pid,Just tags) -> paperTagsHtml pid tags
             (Nothing,Nothing) -> ""
-  return $ object ["success" .= True,"replaceHtml" .= (renderHtml html)]
+  return $ object ["success" .= True,"message" .= ("Tags were replaced." :: Text)]
   
 doRemoveTags :: [PaperId] -> [Text] -> Handler Value
 doRemoveTags ids tags = do
@@ -591,7 +545,7 @@ doRemoveTags ids tags = do
     let removed = filter (`elem` oldtags) tags
     let newtags = oldtags L.\\ removed
     let newpaper = paper{paperTags=newtags}
-    updatePaperDB pid newpaper
+    updatePaperDB email pid newpaper
     return newtags
   let html = case (headMay ids,headMay updatedtags) of
             (Just pid,Just tags) -> paperTagsHtml pid tags
@@ -600,8 +554,11 @@ doRemoveTags ids tags = do
 
 doReplaceTags :: [PaperId] -> [Text] -> Handler Value
 doReplaceTags ids tags = do
-  runDB $ updateWhere [PaperId <-. ids] [PaperTags =. tags]
+  email <- requireAuthId'
+  runDB $ updateWhere [PaperId <-. ids, PaperUserEmail ==. Just email] [PaperTags =. tags]
   return $ object ["success" .= True, "ids" .= map toPathPiece ids]
+
+
 
 postExportCitationR :: Handler RepPlain
 postExportCitationR = do
@@ -617,12 +574,10 @@ postPaperRefsR = getPaperRefsR
 getPaperRefsR :: PaperId -> Handler TypedContent
 getPaperRefsR pid = do
   email <- requireAuthId'
-  paper <- getPaperDB404 email pid
-  if paperUserEmail paper == Just email then do
-    let refs = paperReferences paper
-    return $ toTypedContent $ Ae.object ["refs" .= ("NA"::String)] -- Stub!!! ["refs" .= (map Ae.toJSON refs)]
-  else
-    notFound
+  mp <- getPaperById email pid
+  case mp of
+    Just paper -> return $ toTypedContent $ Ae.object ["success" .= True, "refs" .= map toJSON (paperReferences paper)]
+    Nothing -> return $ failureJSON "Paper ID not found."
 
 
 getPaperInfoAjaxR :: PaperId -> Handler Html
@@ -639,4 +594,8 @@ getPaperCitationR pid = do
     sendResponse $ RepPlain $ toContent $ PR.paperRIS paper
   else
     notFound
+
+
+failureJSON :: Text -> TypedContent
+failureJSON msg = toTypedContent $ object ["success" .= False, "message" .= msg]
 

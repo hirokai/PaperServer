@@ -19,7 +19,7 @@ import Yesod.Auth
 import System.Directory (doesFileExist,removeFile)
 
 import qualified Parser.Paper as P
-import Model.PaperMongo
+import Model.PaperMongo hiding (toStrict)
 import Model.PaperP
 
 import Handler.Utils
@@ -34,6 +34,8 @@ import qualified Data.ByteString.Lazy as BL8
 import qualified Data.ByteString.Lazy.Char8 as BL8 
 import Data.Data 
 import Data.Generics
+import qualified Parser.Lens as L
+import Data.Default
 
 data RenderFormat = FormatA | FormatB | FormatC |
                     FormatATablet | FormatBTablet |
@@ -70,8 +72,20 @@ data PaperMastache = PaperMastache {
   , mainHtml :: Text
   , title :: Text
   , paperId :: Text
+  , parser :: Text
+  , figs :: [P.Figure]
+  , refs :: [Reference2]
+  , availability_text :: Text
 } deriving (Data, Typeable)
 
+deriving instance Data P.Figure
+deriving instance Typeable P.Figure
+
+deriving instance Data Reference2
+deriving instance Typeable Reference2
+
+deriving instance Data P.Citation
+deriving instance Typeable P.Citation
 
 -- Citation with no maybe values
 data Citation2 = Citation2 {
@@ -87,6 +101,27 @@ data Citation2 = Citation2 {
     cpublisher :: Text,
     ctype :: Text
 } deriving (Data, Typeable)
+
+instance Default Citation2 where
+  def = fromCit def
+
+-- Reference with no maybe values
+data Reference2 = Reference2 {
+  refId :: Text,
+  refName :: Text,
+  refCit :: Citation2,
+  refText :: Text,
+  refUrl :: Url 
+}
+
+fromRef :: P.Reference -> Reference2
+fromRef (P.Reference id name cit txt url)
+  = Reference2
+      id
+      name
+      (maybe def fromCit cit)
+      (fromMaybe "" txt)
+      (fromMaybe "" url)
 
 fromCit :: P.Citation -> Citation2
 fromCit (P.Citation doi url title journal year volume pageFrom pageTo authors publisher _type)
@@ -106,21 +141,34 @@ fromCit (P.Citation doi url title journal year volume pageFrom pageTo authors pu
 toMastacheP :: PaperId -> PaperP -> PaperMastache
 toMastacheP pid p =
   let
-    title = fromMaybe "N/A" $ p^.P.paperCitation^.P.citationTitle
-    authors = p^.P.paperCitation^.P.citationAuthors
-    mainHtml = case p^.P.paperMainHtml of
+    cit = p^.L.citation
+    title = fromMaybe "N/A" $ cit^.L.title
+    authors = p^.L.citation^.L.authors
+    mainHtml = case p^.L.mainHtml of
                   Just (P.FlatHtml t) -> t
                   Just _ -> "Stub: not supported structured text"
                   Nothing -> "(Not available)"
-    abstract = fromMaybe "(No abstract)" $ p^.P.paperAbstract
-    cit = p^.P.paperCitation -- emptyCitation{citationTitle=Just title,citationAuthors=authors}
-    cittxt = T.concat ["<i>",fromMaybe "" $ cit^.P.citationJournal, "</i>",
-                        maybe "" (\v -> T.concat [", <b>", v, "</b>"]) (cit^.P.citationVolume),
-                        maybe "" (\p -> T.append ", " p) (cit^.P.citationPageFrom),
-                        maybe "" (\p -> T.append "-" p) (cit^.P.citationPageTo),
-                        maybe "" (\y -> T.concat [" (",T.pack $ show y,")"]) (cit^.P.citationYear)]
+    abstract = fromMaybe "(No abstract)" $ p^.L.abstract
+    cittxt = T.concat ["<i>",fromMaybe "" $ cit^.L.journal, "</i>",
+                        maybe "" (\v -> T.concat [", <b>", v, "</b>"]) (cit^.L.volume),
+                        maybe "" (\p -> T.append ", " p) (cit^.L.pageFrom),
+                        maybe "" (\p -> T.append "-" p) (cit^.L.pageTo),
+                        maybe "" (\y -> T.concat [" (",T.pack $ show y,")"]) (cit^.L.year)]
+    parser = fromMaybe "" $ p^.L.parserInfo
+    figs = p^.L.figures
+    refs = p^.L.references
+    f (P.Figure a b c d) = P.Figure a b c (T.pack $ localRes d)
+    avail = T.intercalate ";" $ catMaybes [
+              if isJust (p^.L.abstract) then Just "abs" else Nothing,
+              if isJust (p^.L.mainHtml) then Just "full" else Nothing,
+              if null figs then Nothing else Just "figs",
+              if null refs then Nothing else Just "refs"
+                ]
   in
-    PaperMastache (fromCit cit) cittxt abstract mainHtml title (toPathPiece pid)
+    PaperMastache
+      (fromCit cit) cittxt abstract mainHtml title (toPathPiece pid)
+      parser (map f figs) (map fromRef refs)
+      avail
 
 renderMastache :: FilePath -> PaperId -> PaperP -> IO (PageContent (Route App))
 renderMastache file pid pp = do
@@ -130,23 +178,24 @@ renderMastache file pid pp = do
         (mkGenericContext inf) 
   return $ PageContent (preEscapedToHtml ("Test title"::Text))
                      (\_ -> preEscapedToHtml ("Test head"::Text))
-                     (\_ -> preEscapedToHtml $ decodeUtf8 $ BL8.toStrict $ res)
+                     (\_ -> preEscapedToHtml $ decodeUtf8 $ toStrict $ res)
 
+toStrict = B.concat . BL8.toChunks
 
 saveFormattedCache :: RenderFormat -> PaperId -> PaperP -> Handler ()
 saveFormattedCache format paperId pp = do
   render <- getUrlRender
   let
     paper = paperPToPaper pp
-    cit = pp^.P.paperCitation
+    cit = pp^.L.citation
     cit' = paperCitation paper
-    refs = pp^.P.paperReferences
+    refs = pp^.L.references
     refs' = paperReferences paper
-    figures = pp^.P.paperFigures
-    mabstract = pp^.P.paperAbstract
-    mmainHtml = fmap renderStructured $ pp^.P.paperMainHtml
-    parser = pp^.P.paperParserInfo
-    ctype = cit^.P.citationType
+    figures = pp^.L.figures
+    mabstract = pp^.L.abstract
+    mmainHtml = fmap renderStructured $ pp^.L.mainHtml
+    parser = pp^.L.parserInfo
+    ctype = cit^.L.ptype
   PageContent title head body
     <- case format of
             FormatA -> widgetToPageContent $(widgetFile "format_a")

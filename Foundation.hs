@@ -7,7 +7,7 @@ import Yesod
 import Yesod.Static
 import Yesod.Auth
 import Yesod.Auth.BrowserId
-import Yesod.Auth.GoogleEmail
+-- import Yesod.Auth.GoogleEmail
 import Yesod.Default.Config
 import Yesod.Default.Util (addStaticContentExternal)
 import Network.HTTP.Conduit (Manager)
@@ -72,6 +72,8 @@ instance Yesod App where
     makeSessionBackend _ = fmap Just $ defaultClientSessionBackend
         (3 * 24 * 60 * 60) -- 3 days
         "config/client_session_key.aes"
+
+    maximumContentLength site route = Just (fromInteger 100000000)  -- 100 MB
 
     defaultLayout widget = do
         master <- getYesod
@@ -170,7 +172,7 @@ instance YesodAuth App where
     getAuthId = return . Just . credsIdent
 
     -- You can add other plugins like BrowserID, email or OAuth here
-    authPlugins _ = [authBrowserId def, authGoogleEmail]
+    authPlugins _ = [authBrowserId def] --, authGoogleEmail]
 {-
     maybeAuthId = do
       -- ss <- getSession

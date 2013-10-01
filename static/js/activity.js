@@ -11,6 +11,7 @@ $(function(){
 var journalstat;
 
 var app = app || {};
+
 app.Paper = Backbone.Model.extend({
 	defaults: function () {
 		return { id: "", title: "", citation: "", tags:[], doi: "",checked: false };
@@ -26,12 +27,72 @@ app.Paper = Backbone.Model.extend({
 	}
 });
 
+var Filter = Backbone.Model.extend({
+	defaults: function () {
+		var current = new Date();
+		return { from: new Date(current-1000*60*60*24*30), to: current};
+	},
+	setPeriod: function (s){
+		this.set(this.calcPeriodFromType(s));
+	},
+	calcPeriodFromType: function(s){
+		var from;
+		var to = new Date();
+		if(s=='lastmonth'){
+			from = new Date(to - (1000*60*60*24*30));
+			return {from: from, to: to};
+		}else if (s == 'lastweek'){
+			from = new Date(to - (1000*60*60*24*7));
+			return {from: from, to: to};
+		}else if (s == 'today'){
+			from = new Date(to - (1000*60*60*24));
+			return {from: from, to: to};			
+		}else if (s == 'lasthour'){
+			from = new Date(to - (1000*60*60));
+			return {from: from, to: to};			
+		}else if (s == 'customtime'){  //FIXME. stub.
+			from = new Date(to - (1000*60*60*24*30));
+			return {from: from, to: to};			
+		}else if (s == 'alltime'){
+			from = new Date("2013-01-01");  // Stub
+			return {from: from, to: to};			
+		}else{
+			return undefined;
+		}
+	}
+});
+
+var commonFilter = new Filter();
+
+var Timeline = Backbone.Model.extend({
+	defaults: function () {
+		var current = new Date();
+		var from = new Date(current-1000*60*60*24*30);
+		var to = current;
+		return { from: from, to: to, loaded: false,
+			fromTruncated: new Date(mkDateStr(from)),
+			toTruncated: new Date(mkDateStr(to)),
+			unit: "day"};
+	},
+	setData: function(papers){
+		var current = new Date();
+		var oldest = new Date("1980-01-01");
+		var dates = _.map(papers,function(d){
+			var date = new Date(d.addedDate);
+			return (date >= oldest ? new Date(date) : current);
+		});
+		var vmin = _.min(dates);
+		var vmax = _.max(dates);
+		console.log(vmin,vmax);
+		this.set({from: vmin,to:vmax,loaded: true});
+	}
+});
 
 // This keeps all papers in the library, and provides filters for display.
 // This design may be reconsidered for a large library.
 var PaperList = Backbone.Collection.extend({
 	model: app.Paper,
-	url: "/activity.json",
+	url: "/list.json",
 	initialize: function(){
 		this.$date = undefined;
 		var test1 = new app.Paper({id:"123123",title:"Hoge",citation:"JACS,2000."});
@@ -55,32 +116,8 @@ var PaperList = Backbone.Collection.extend({
 			return d == date;
 		});
 	},
-	getPeriodFromType: function(s){
-		var from;
-		var to = new Date();
-		if(s=='lastmonth'){
-			from = to - (1000*60*60*24*30);
-			return {from: from, to: to};
-		}else if (s == 'lastweek'){
-			from = to - (1000*60*60*24*7);
-			return {from: from, to: to};
-		}else if (s == 'today'){
-			from = to - (1000*60*60*24);
-			return {from: from, to: to};			
-		}else if (s == 'lasthour'){
-			from = to - (1000*60*60);
-			return {from: from, to: to};			
-		}else if (s == 'customtime'){  //FIXME. stub.
-			from = to - (1000*60*60*24*30);
-			return {from: from, to: to};			
-		}else if (s == 'alltime'){
-			from = 0;
-			return {from: from, to: to};			
-		}else{
-			return undefined;
-		}
-	},
-	//f: {period: {from: Date, to: Date}, fulltext: String, author: [String], authorAnd: Bool}
+
+	//f: {period: {from: Date, to: Date}, search: String}
 	getByFilters: function(f){
 		return this.filter(function(p){
 			return p.addedDate >= f.period.from && p.addedDate <= f.period.to
@@ -94,30 +131,133 @@ var PaperList = Backbone.Collection.extend({
 
 		//console.log(journalstat);
 	//	mkTable(journalstat.time);
-		mkCalendar(journalstat.calendar);
-		mkPieChart(journalstat.chart);
-		mk2DTime(res.papers);
-		return res.papers;
+		mk2DTime(res);
+		timeline.setData(res);
+		return res;
 	}
 });
 
 //Make an instance of Collection.
 app.Papers = new PaperList();
 
+var timeline = new Timeline();
 //
 // View definitions
 //
 
 app.CalendarItemView = Backbone.View.extend({
 	tagName: "tr",
-	template: _.template( $('#timeline-item-template').html() ),
+	template: _.template( $('#calendar-item-template').html() ),
 	render: function(){
     	this.$el.html( this.template( this.model.toJSON() ) );
 		return this;
 	}});
 
-app.CalendarView = Backbone.View.extend({
+app.TimelineView = Backbone.View.extend({
 	el: $("#content-timeline"),
+	initialize: function() {
+		this.mkTimeline();
+		this.listenTo(commonFilter, 'change', this.loadData);
+	},
+	tFrom: undefined,
+	tTo: undefined,
+	width: 800,
+	height: 200,
+	svg: undefined,
+	bars: undefined,
+	removeAll: function(){
+
+	},
+	mkTimeline: function() {
+		this.svg = d3.select('#timeline-graph')
+			.append('svg')
+			.attr('width',this.width)
+			.attr('height',this.height)
+			.style('background','#eeeeee');
+
+		var rect = this.svg.append('rect')
+			.attr('x',10)
+			.attr('y',10)
+			.attr('width',this.width-20)
+			.attr('height',this.height-20)
+			.style('fill','#cccccc');
+
+		this.tFrom = this.svg.append('text')
+			.attr('x',20)
+			.attr('y',this.height-20)
+			.attr('text-anchor','start')
+			.text("");
+
+		this.tTo = this.svg.append('text')
+			.attr('x',this.width-20)
+			.attr('y',this.height-20)
+			.attr('text-anchor','end')
+			.text("");
+	},
+	loadData: function() {
+		this.svg.selectAll('rect.bars').remove();
+/*		if(this.bars){
+			this.bars
+			.transition()
+			.duration(300)
+			.style('fill-opacity',0)
+			.remove();				
+		}*/
+		var from = commonFilter.get('from');
+		var to = commonFilter.get('to');
+		this.tFrom.text(formatDate(from));
+		this.tTo.text(formatDate(to));
+
+		var ybase = this.height - 50;
+		this.svg.append('line')
+			.attr('x1',20)
+			.attr('y1',ybase)
+			.attr('x2',this.width-20)
+			.attr('y2',ybase)
+			.attr('stroke','black')
+			.attr('stroke-width',1);
+		
+		var vals = _.map(journalstat.calendar,function(d){return (new Date(d.date) >= from) ? d.count : 0;});
+		var bar_height_factor = (this.height-80)/_.max(vals);
+		var bar_width = (this.width-60)/((to-from)/((1000*60*60*24)));
+		this.bars = this.svg
+			.selectAll('rect.bars')
+			.data(journalstat.calendar)
+			.enter()
+			.append('rect')
+			.attr('class','bars')
+			.attr('x',function(d,i){return ((new Date(d.date)-from)/(1000*60*60*24))*bar_width+30})
+			.attr('y',function(d){return ybase-bar_height_factor*d.count;})
+			.attr('width',bar_width*0.9)
+			.attr('height',function(d){return bar_height_factor*d.count;})
+			.attr('fill','#4444ff');
+	},
+	addOne: function( paper ) {
+      var view = new app.CalendarItemView({ model: paper });
+      $('#paper-list').append( view.render().el );
+    },
+    addAll: function(papers) {
+    //	log(papers);
+    	var c = this;
+      this.$('#paper-list').html('');
+      _.each(papers,function(p){c.addOne(p);});
+    }
+});
+
+$('#filter-time label').on('change',function(e){
+	commonFilter.setPeriod($(e.target).attr('id'));
+});
+
+
+window.setTimeout(function(){
+},3000);
+
+function formatDate(d) {
+	return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()] + " " + d.getDate();
+}
+
+app.CalendarView = Backbone.View.extend({
+	el: $("#content-calendar"),
 	events:{
 		'.check': 'toggle'
 	},
@@ -163,9 +303,9 @@ var Route = Backbone.Router.extend({
 		$('#content-statistics').show();
 		$('#journals').show();
 	},
-	recent: function(){
+	calendar: function(){
 		$('.content').hide();
-		$('#content-recent').show();
+		$('#content-calendar').show();
 	},
 	trend: function(){
 		$('.content').hide();
@@ -174,11 +314,12 @@ var Route = Backbone.Router.extend({
 });
 
 app.Papers.on("add",function(){
-	log("added.")
+//	log("added.")
 });
 
 var route = new Route();
 var view = new app.CalendarView();
+var viewtimeline = new app.TimelineView();
 Backbone.history.start();
 
 //ToDo: modify this to Backbone events.
@@ -200,7 +341,7 @@ function mkDateStr(date){
 function getJournalStat(dat,numHist) {
 	var res = new Object();
 
-	var js = _.map(dat.papers,function(j){
+	var js = _.map(dat,function(j){
 		return j.citation.journal;
 	});
 	var js2 = _.countBy(js,function(j){
@@ -211,21 +352,21 @@ function getJournalStat(dat,numHist) {
 	});
 	res.chart = js3;
 
-	res.time = _.take(_.sortBy(_.map(dat.papers,function(p){
+	res.time = _.take(_.sortBy(_.map(dat,function(p){
 		return [p.citation.title,new Date(p.addedDate),p.id];
 	}), function(p) {
 		return p[1];
 	}).reverse(),numHist);
 
-	var dates = _.groupBy(dat.papers,function(p){
+	var dates = _.groupBy(dat,function(p){
 		return mkDateStr(new Date(p.addedDate));
 	});
 	//console.log(dates);
 
-	res.calendar = _.map(dates,function(papers,datestr){
-		return {date: datestr, count: papers.length,papers: papers};
+	res.calendar = _.map(dates,function(papers,date){
+		return {date: date, count: papers.length,papers: papers};
 	});
-	//console.log(res.calendar);
+
 
 	return res;
 }
@@ -290,127 +431,11 @@ function getColorNum(count,max){
 }
 
 
-function mkCalendar(json) {
-	var data = d3.nest()
-	.key(function(d) { return d.date; })
-	.rollup(function(d) { return d[0].count; })
-	.map(json);
-
-	var max = _.max(data);
-
-	rect.filter(function(d) { return d in data; })
-	.attr("class", function(d) { return "day " + (data[d] ? "exist ": "") + "color" + getColorNum(data[d],max); })
-	.attr("id", function(d){return d;})
-	.on("click",function(d){
-		app.Papers.selectDate(d);
-	})
-	.select("title")
-	.text(function(d) { return d + ": " + data[d]; });
-}
-
-function mkPieChart(chart){
-try{
-		$('#journal-graph').highcharts({
-			chart: {
-				plotBackgroundColor: null,
-				plotBorderWidth: null,
-				plotShadow: false
-			},
-			title: {
-				text: 'Journals in the library'
-			},
-			tooltip: {
-				pointFormat: '<b>{point.y:.0f}</b>'
-			},
-			plotOptions: {
-				pie: {
-					allowPointSelect: true,
-					cursor: 'pointer',
-					dataLabels: {
-						enabled: true,
-						color: '#000000',
-						connectorColor: '#000000',
-						format: '<b>{point.name}</b>: {point.percentage:.1f} %'
-					}
-				}
-			},
-			series: [{
-				type: 'pie',
-				name: 'Journal statistics',
-				data: chart
-			}]
-		});
-	}catch(e){
-		log(e);
-	}
-}
 
 
-var width = 960,
-height = 136,
-    cellSize = 17; // cell size
-
-    var day = d3.time.format("%w"),
-    week = d3.time.format("%U"),
-    percent = d3.format(".1%"),
-    format = d3.time.format("%Y-%m-%d");
-
-    var color = d3.scale.quantize()
-    .domain([-.05, .05])
-    .range(d3.range(11).map(function(d) { return "q" + d + "-11"; }));
-
-    var year = (new Date()).getFullYear();
-
-    var svg = d3.select("#calendar").selectAll("svg")
-    .data(d3.range(year - 1, year + 1))
-    .enter().append("svg")
-    .attr("width", width)
-    .attr("height", height)
-    .attr("class", "RdYlGn")
-    .append("g")
-    .attr("transform", "translate(" + ((width - cellSize * 53) / 2) + "," + (height - cellSize * 7 - 1) + ")");
-
-    svg.append("text")
-    .attr("transform", "translate(-6," + cellSize * 3.5 + ")rotate(-90)")
-    .style("text-anchor", "middle")
-    .text(function(d) { return d; });
-
-    var rect = svg.selectAll(".day")
-    .data(function(d) { return d3.time.days(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
-    .enter().append("rect")
-    .attr("class", "day")
-    .attr("width", cellSize)
-    .attr("height", cellSize)
-    .attr("x", function(d) { return week(d) * cellSize; })
-    .attr("y", function(d) { return day(d) * cellSize; })
-    .datum(format);
-
-    rect.append("title")
-    .text(function(d) { return d; });
-
-    svg.selectAll(".month")
-    .data(function(d) { return d3.time.months(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
-    .enter().append("path")
-    .attr("class", "month")
-    .attr("d", monthPath)
-    .attr("x", function(d) { return week(d) * cellSize; })
-    .attr("y", function(d) { return day(d) * cellSize; })
-
-    function monthPath(t0) {
-    	var t1 = new Date(t0.getFullYear(), t0.getMonth() + 1, 0),
-    	d0 = +day(t0), w0 = +week(t0),
-    	d1 = +day(t1), w1 = +week(t1);
-    	return "M" + (w0 + 1) * cellSize + "," + d0 * cellSize
-    	+ "H" + w0 * cellSize + "V" + 7 * cellSize
-    	+ "H" + w1 * cellSize + "V" + (d1 + 1) * cellSize
-    	+ "H" + (w1 + 1) * cellSize + "V" + 0
-    	+ "H" + (w0 + 1) * cellSize + "Z";
-    }
-
-    d3.select(self.frameElement).style("height", "800px");
+d3.select(self.frameElement).style("height", "800px");
 
 function getTimeGrid(papers){
-	log(papers);
     var d2 = _.map(_.range(0,8),function(y){
     	return _.map(_.range(0,25),function(x){
     		return {x:x,y:y,v:0};

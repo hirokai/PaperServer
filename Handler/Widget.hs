@@ -16,6 +16,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 
 import qualified Parser.Paper as P 
 import Control.Lens
+import qualified Parser.Lens as L
 
 citationWidget cit = [hamlet|
 <p #citation>
@@ -112,7 +113,7 @@ paperListEntryWidget (pid, p, index, hists) = do
         <li>
          <a href="#" onclick="paper_delete(['#{toPathPiece pid}']);"> Delete
         <li>
-         <a href="#" onclick="reparse(['#{toPathPiece pid}']);"> Reparse
+         <a href="#" id='action_reparse');"> Reparse
         <li>
           <a href="#{fromMaybe "#" $ citationUrl c}"> Original URL
         <li>
@@ -171,9 +172,9 @@ citHtml :: P.Citation -> Html
 citHtml cit =
   H.span $ do
     H.i $ do
-      toHtml $ (maybe "" (`T.append` ", ") $ cit^.P.citationJournal)
+      toHtml $ (maybe "" (`T.append` ", ") $ cit^.L.journal)
     H.b $ do
-      toHtml $ maybe "" (`T.append` ", ") $ cit^.P.citationVolume
-    toHtml $ (fromMaybe "" $ cit^.P.citationPageFrom)
-    toHtml $ (maybe "" (T.append " - ") $ cit^.P.citationPageTo)
-    toHtml $ maybe "" (\y -> " ("++show y ++")") $ cit^.P.citationYear
+      toHtml $ maybe "" (`T.append` ", ") $ cit^.L.volume
+    toHtml $ (fromMaybe "" $ cit^.L.pageFrom)
+    toHtml $ (maybe "" (T.append " - ") $ cit^.L.pageTo)
+    toHtml $ maybe "" (\y -> " ("++show y ++")") $ cit^.L.year

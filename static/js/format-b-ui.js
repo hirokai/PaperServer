@@ -167,7 +167,7 @@ function setupUI(){
   $('#button-pubmed').click(function(){
     var pid = $('meta[name="paper_id"]').prop('content');
     var doi = $('meta[name="doi"]').prop('content');
-    $.get("/pubmed/reload",{id:pid,doi:doi},function(res){
+    $.get("/pubmed/reload",{id:pid,doi:encodeURI(doi)},function(res){
       if(res.success){
         location.reload();
       }

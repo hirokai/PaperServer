@@ -6,7 +6,6 @@
 
 ## 優先度高
 * list UIの複数選択 
-  * 削除
   * reparse
   * export citation
 * Activity logの検索・フィルター機能
@@ -26,9 +25,6 @@
 * PDF Viewing
 
 * More complete html parsing engine
-
-* 同じ論文の複数のエントリを自動でマージする。
-* 論文への（短いタグではなく文章としての）コメント追加機能。
 
 * PDFからのテクスト抽出。
 
@@ -55,7 +51,7 @@
  * RPCなどを使った、別プロセスでのパーズ。キューを作って順次解析させる。
 * PubmedのAPIの利用の拡充。referenceなども取れる。
   *その他のDBも検討。
-    * PMCは前文が取れる。
+    * PMCは全文が取れる。
 
 * backgridjsを使って、/list のデータ管理をbackboneと組み合わせて使う。
 

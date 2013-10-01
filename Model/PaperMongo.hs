@@ -12,6 +12,12 @@ import qualified Parser.Paper as P
 import Database.MongoDB as DB
 import Data.Bson -- ((!?))
 import Database.Persist.MongoDB
+import Data.Aeson as Ae
+
+import qualified Data.ByteString as B (concat) 
+import Data.ByteString.Lazy (fromChunks,toChunks)
+
+import Data.Text.Encoding
 
 import Model.PaperReader (mkCitHtml)
 
@@ -28,11 +34,12 @@ data PaperSummary = PaperSummary {
   pDoi :: Text,
   pTags :: [Text],
   pAvail :: ResourceAvailability,
-  pAddedDate :: UTCTime
+  pAddedDate :: UTCTime,
+  pMisc :: ByteString   -- Used for storing addition data (currently stringified JSON)
 } deriving (Show,Eq)
 
 --
--- High level functions to get Paper(s)
+-- High level functions to get/modify Paper(s)
 --
 
 getPaperById = getPaperDB
@@ -63,6 +70,36 @@ getPaperByUrl email url = do
                   (Just i,Just p) -> Just (i,p)
               Nothing -> Nothing
   return res
+
+getPaperByDOI :: Text -> Text -> Handler (Maybe (PaperId,Paper))
+getPaperByDOI email doi = do
+  mbson <- queryRawMongoOne $ paperByFilter email ["doi" =: doi]
+  let res = case mbson of
+              Just bs ->
+                case ((bs !? "_id" :: Maybe ObjectId) >>= (fromPathPiece . T.pack . show),paperFromBson bs) of
+                  (Just i,Just p) -> Just (i,p)
+              Nothing -> Nothing
+  return res
+
+getPaperMisc :: Text -> PaperId -> Handler (Maybe Ae.Value)
+getPaperMisc email pid = do
+  let on = 1 :: Int
+  mbson <- queryRawMongoOne $ findOne $ (DB.select ["user_email" =: email, "_id" =: fromPid pid] "paper"){DB.project = ["misc" =: on]}
+  let mmisc = mbson >>= (!? "misc")
+  return $ case mmisc of
+    Just (Binary bin) -> (Ae.decode . fromStrict) bin
+    _ -> Nothing
+
+updatePaperMisc :: Text -> PaperId -> Ae.Value -> Handler Bool
+updatePaperMisc email pid val = do
+  liftIO $ print "updatePaperMisc"
+  liftIO $ print val
+  queryRawMongoUnit $ DB.modify (DB.select ["_id" =: fromPid pid, "user_email" =: email]  "paper")
+                                ["$set" =: ["misc" =: Binary (toStrict $ Ae.encode val)]]
+  return True
+
+toStrict = B.concat . toChunks
+fromStrict = fromChunks . (:[])
 
 --For performance reason, there are two functions, getPaperByFilter and getPapersByFilter
 getPaperByFilter :: Text -> Bson.Document -> Handler (Maybe Paper)
@@ -100,8 +137,12 @@ countPapersByQuery query = do
   return $ fromMaybe 0 c
 
 -- FIXME: Use raw mongo. To do that, Make Val instance of Paper. 
-updatePaperDB :: PaperId -> Paper -> Handler ()
-updatePaperDB pid p = runDB $ Database.Persist.MongoDB.replace pid p
+updatePaperDB :: Text -> PaperId -> Paper -> Handler Bool
+updatePaperDB email pid p = do
+  runDB $ Database.Persist.MongoDB.replace pid p
+  return True
+  -- queryRawMongoUnit $ DB.save "paper" (bsonFromPaper pid p)
+
 
 getPaperDB404 :: Text -> PaperId -> Handler Paper
 getPaperDB404 email pid = do
@@ -114,7 +155,7 @@ getPaperDB404 email pid = do
 -- allOfUser :: (MonadBaseControl IO m, Monad m,Control.Monad.IO.Class.MonadIO m) => Text -> Action m [Bson.Document]
 -- allSummariesOfUser :: Text -> m a [Document]
 summaryList = ["url" =: on,"citation" =: on,"doi" =: on,"tags" =: on,
-                             "available" =: on,"time_added" =: on]
+                             "available" =: on,"time_added" =: on,"misc" =: on]
   where on = 1 :: Int
 
 
@@ -151,6 +192,18 @@ queryRawMongo action = do
               Left err -> []
               Right ps -> ps
   return recs
+
+queryRawMongoUnit :: DB.Action Handler () -> Handler Bool
+queryRawMongoUnit action = do
+  app <- getYesod
+  let dbconf = persistConfig app
+  let (Just (MongoAuth user pass)) = mgAuth dbconf
+  pipe <- liftIO $ DB.runIOE $ DB.connect (DB.host $ T.unpack (mgHost dbconf))
+  eith <- DB.access pipe DB.ReadStaleOk "PaperServer" (doAuth user pass >> action)
+  liftIO $ DB.close pipe
+  return $ case eith of
+              Left err -> False
+              Right p -> True
 
 --
 -- Actions for Database.MongoDB.Query
@@ -242,10 +295,15 @@ papersByFilter email filt = do
 defaultQuery :: Text -> DB.Query
 defaultQuery email = select ["user_email" =: email] "paper"
 
-
 --
 -- BSON <=> Paper data types conversion.
 --
+
+bsonFromPaper :: PaperId -> Paper -> Bson.Document
+bsonFromPaper
+  pid
+  (Paper doi url orig abs mainh mcit refs figs res toc tags note misc pinfo supp mavail email time)
+  = undefined
 
 paperFromBson :: Bson.Document -> Maybe Paper
 paperFromBson doc =
@@ -413,7 +471,7 @@ instance Val LocalCopyStatus where
 --
 
 instance ToJSON PaperSummary where
-  toJSON (PaperSummary title cit pid doi tags avail date)
+  toJSON (PaperSummary title cit pid doi tags avail date misc)
     = object [
         "title" .= title
         , "citation" .= cit
@@ -422,6 +480,7 @@ instance ToJSON PaperSummary where
         , "tags" .= tags
         , "availability" .= avail
         , "addedDate" .= date
+        , "misc" .= decodeUtf8 misc
         ]
 {-
 mkPSVals (PaperSummary t c i d tags avail date) =
@@ -468,6 +527,9 @@ fromBson doc =
                    ("ref" `elem` ts) 
                    ("toc" `elem` ts)
     mdate = doc !? "time_added"
+    mmisc = case doc !? "misc" of
+              Just (Binary m) -> Just m
+              Nothing -> Nothing
   in
   PaperSummary
     <$> doc !? "citation.title"
@@ -477,3 +539,4 @@ fromBson doc =
     <*> doc !? "tags"
     <*> mavail
     <*> mdate
+    <*> mmisc

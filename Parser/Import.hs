@@ -4,6 +4,7 @@ module Parser.Import (
 module Parser.Import
 , module Parser.Paper
 , module Parser.PaperReaderTypes
+-- , module Parser.Lens
 , module Text.XML.Selector
 , module Text.XML.Selector.TH
 , module Text.XML.Scraping
@@ -14,6 +15,7 @@ module Parser.Import
 , module Debug.Trace
 , module Data.Monoid
 , module Prelude
+, module Data.Default
 ) where
 
 import Prelude hiding (head,tail)
@@ -31,8 +33,11 @@ import Safe
 
 import Parser.Paper
 import Parser.PaperReaderTypes
+-- import Parser.Lens
 import Debug.Trace
 import Data.Monoid
+import Data.Default
+
 
 {-
 -- This is for checking the use of head.

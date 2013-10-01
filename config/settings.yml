@@ -1,7 +1,7 @@
 Default: &defaults
   host: "*4" # any IPv4 host
   port: 3000
-  approot: "http://169.229.69.122"
+  approot: "http://paperserver.jp"
   copyright: Insert copyright statement here
   #analytics: UA-YOURCODE
 

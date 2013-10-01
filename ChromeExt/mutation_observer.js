@@ -1,24 +1,35 @@
 // This is only used dynamically loaded pages such as Elsevier.
 // Elsevier does not give full DOM at the time of DOMContentLoaded
 
-var observer = new MutationObserver(function(mutations) {
- $.each(mutations,function(idx){
-   log(this);
-  // Stub: need a mechanism to combine multiple calls to this. 
-   var completed = findMeta(this.addedNodes);
-   if(completed && State.notAddedYet){
-    log(citation);
-    State.notAddedYet = false;
-    //addUrl();
-  }
-});
-}).observe(document, {
-  attributes: true,
-  childList: true,
-  subtree: true,
-  attributeFilter: []
-});
+/*
+var observer;
 
+var fragHtml = '';
+var frag_count = 0;
+
+//Stub: ad hoc for sciencedirect.
+if(location.href.match(/^http:\/\/www\.sciencedirect\.com\//)){
+  observer = new MutationObserver(function(mutations) {
+    var nodes = _.filter(_.flatten(_.map(mutations,function(m){return m.addedNodes})),function(n){
+      return $(n).hasClass('page_fragment');
+    });
+    if(nodes.length > 0){
+
+    }
+    _.each(nodes,function(node){
+      var h =  node[0].innerHTML;
+      if(h){
+        fragHtml += h;
+        frag_count += 1;
+      }
+    });
+  }).observe(document, {
+    attributes: true,
+    childList: true,
+    subtree: true,
+    attributeFilter: []
+  });
+}
 
 var citation = new Object();
 citation.meta = [];
@@ -32,7 +43,6 @@ function findMeta(rec){
     if(n == 'title'){
       citation.pageTitle = r.innerText;
     }else if(n == 'meta'){
-      log(r);
       citation.meta.push({name: r.name, content: r.content});
     }
   });
@@ -60,3 +70,5 @@ function addUrl(){
 
 var State = new Object();
 State.notAddedYet = true;
+
+*/

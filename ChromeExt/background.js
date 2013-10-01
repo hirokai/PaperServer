@@ -4,9 +4,11 @@ var log = function(d) {console.log(d);};
 
 var path_addurl = '/paper/add_url';
 var path_rawurl = '/paper/raw/'
+var path_addreparsed = '/paper/update'
 
 var hostRex = /^(http:\/\/.+?)\/(.+?)\//
 
+/*
 chrome.tabs.onUpdated.addListener(function(tabId, info, tab){
   var m = tab.url.match(hostRex);
   if(m && m.length >= 2){
@@ -17,6 +19,7 @@ chrome.tabs.onUpdated.addListener(function(tabId, info, tab){
     }    
   }
 });
+*/
 
 chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
   var details = new Object();
@@ -60,7 +63,16 @@ chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
     var host = request.host;
     var doi = request.paperDoi;
     var pid = request.paperId;
-    setupPubmedFetching(host,pid,doi);
+    if(host && doi && pid){
+      setupPubmedFetching(host,pid,doi);
+    }
+  }else if(request.message == "FetchGScholar"){
+    var host = request.host;
+    var pid = request.paperId;
+    var title = request.paperTitle;
+    if(host && pid && title){
+      setupGoogleScholar(host,pid,title);
+    }
   }else if (request.message == "DoesSupportParsingOnClient") {
     parseSupported(request.url);
   }else if (request.message == "ParseOnClient") {
@@ -72,7 +84,16 @@ chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
     log(request);
     if(parseSupported(url)){
       $.get(localStorage["hostDomain"]+path_rawurl+pid,function(html){
-        parseHtml(url,html);
+        var parsed = parseHtml(url,html);
+        if(parsed && parsed.success){
+          console.log(parsed);
+          $.post(localStorage["hostDomain"]+path_addreparsed,{parsed:JSON.stringify(parsed.data)},function(res){
+            console.log(res);
+            sendResponse(res);
+          });
+        }else{
+          reparseOnServer(pid,sendResponse);          
+        }
       });
     }else{
       reparseOnServer(pid,sendResponse);
@@ -86,7 +107,7 @@ chrome.pageAction.onClicked.addListener(function(tab){
 });
 
 
-var path_resourcelist = '/resource_for/'
+var path_resourcelist = '/paper/resources/'
 
 //Following are image download by client.
 function setupImgFetching(host,pid){
@@ -95,7 +116,7 @@ function setupImgFetching(host,pid){
   $.get(url, function(res){
     if(res.success){
       console.log(res);
-      fetchImages(host,pid,res.url);
+      fetchImages(host,pid,res.resources);
     }else{
       console.log(res.message);
       //This error is caused because the parsing hasn't done, so wait a bit and repeat.
@@ -106,7 +127,8 @@ function setupImgFetching(host,pid){
   });
 }
 
-var path_uploadpubmed = '/pubmed/add'
+var path_upload_pubmed = '/metainfo/add_pubmed';
+var path_upload_scholar = '/metainfo/add_gs';
 
 function setupPubmedFetching(host,pid,doi){
   var url = "http://www.ncbi.nlm.nih.gov/pubmed?term="+encodeURI(doi)+"%5BLocation%20ID%5D&report=xml&format=text";
@@ -116,28 +138,48 @@ function setupPubmedFetching(host,pid,doi){
       , dataType: 'text'
       , success:function(res){
         var xml = res.replace('&lt;', '<')
-                   .replace('&gt;', '>');
-      console.log(xml);
-      var upload_url = host + path_uploadpubmed;
-      console.log(upload_url);
-      $.post(upload_url,{id: pid,doi:doi, xml: xml},function(res){
-        console.log(res);
-      });
+                     .replace('&gt;', '>');
+        var upload_url = host + path_upload_pubmed;
+        console.log(upload_url);
+        $.post(upload_url,{id: pid,doi:doi, xml: xml},function(res){
+          console.log(res);
+        });
       }});
 }
 
-function fetchImages(host,pid,urls){
+function setupGoogleScholar(host,pid,title){
+  var url = "http://scholar.google.co.jp/scholar?q="+encodeURI(title);
+  $.get(url,function(res){
+    var divs = $('div.gs_r:first div.gs_fl a',res);
+    var astr = _.map(divs,function(d){return $(d).attr('href');}).join('');
+//    console.log(astr);
+    var m = astr.match(/info:(.+?):scholar/);
+    if(m){
+      var gsid = m[1];
+      var url2 = "http://scholar.google.co.jp/scholar.ris?q=info:"+gsid+":scholar.google.com/&output=citation&ct=citation&cd=0";
+      $.get(url2,function(ris){
+//        console.log(r2);
+        $.post(host+path_upload_scholar,{id: pid,ris: ris},function(res){
+          console.log(res);
+        });
+      });
+    }
+  });
+}
+
+function fetchImages(host,pid,resources){
   var img = [];
-  console.log("fetchImages(): ",urls);
   if($('#img_fetched').length == 0){
     $('body').append($('<div id="img_fetched" style="display:none;" />'));
   }
-  for(var i = 0; i < urls.length; i++){
+  var res = _.filter(resources,function(r){return !r.exists;});
+  console.log("fetchImages(): ",res);
+  for(var i = 0; i < res.length; i++){
     img[i] = document.createElement('img');
     $(img[i]).attr('id','bgimg_'+i);
     $('#img_fetched').append(img[i]);
     addImgLoadListener(host,pid,img[i],i);
-    img[i].src = urls[i];
+    img[i].src = res[i].url;
   }
 }
 
@@ -171,7 +213,7 @@ function addImgLoadListener(host,pid,img,i){
 
 function reparseOnServer(pid,callback){
   log('(Parsing not possible on client, so) Reparsing on server...');
-  $.get(localStorage["hostDomain"]+'/paper/single_reparse',{id:pid},function(res){
+  $.get(localStorage["hostDomain"]+'/paper/reparse',{id:pid},function(res){
     callback(res);
   });
 }

@@ -12,3 +12,5 @@ mkdir data/FormatAMobile
 mkdir data/FormatBMobile
 mkdir data/pubmed
 mkdir data/raw
+mkdir data/attachment
+mkdir data/gscholar

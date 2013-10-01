@@ -15,6 +15,8 @@ module Parser.Utils
     , takeCurUntil
     , mimeFromUrl
     , (<||>) 
+    , samePaper
+    , mkCitText
   ) where
 
 import Text.XML
@@ -24,6 +26,12 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Text.XML.Selector
 import Text.XML.Scraping as S
+import Data.Traversable
+
+import Control.Lens
+import Parser.Paper
+import Parser.Lens
+import Data.Maybe
 
 import Safe
 
@@ -100,3 +108,15 @@ as <||> bs =
     bs
   else
     as
+
+
+samePaper :: Citation -> Citation -> Bool
+samePaper c1 c2 = (c1^.citationDoi) == (c2^.citationDoi) || (c1^.citationUrl) == (c2^.citationUrl)
+
+--ToDo: Complete this.
+mkCitText :: Reference -> Text
+mkCitText ref
+  = case _referenceCit ref of
+      Just c -> (fromMaybe "" $ c^.citationJournal) `T.append` (maybe "" (", " `T.append`) $
+                  fmap (T.pack . show) $ c^.citationYear)
+      Nothing -> ""

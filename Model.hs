@@ -15,6 +15,7 @@ import qualified Data.Text as T
 import Data.ByteString (ByteString)
 import Data.Time.Clock
 import qualified Parser.Paper as P
+import Parser.JSON
 
 import Model.Defs
 import Data.Data
@@ -70,11 +71,11 @@ paperSummary pid p
 paperSummary' :: Entity Paper -> Value
 paperSummary' (Entity pid p) = object $ paperSummary pid p
 
-
+{-
 -- default values
 emptyCitation :: Citation
 emptyCitation = Citation Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing [] Nothing Nothing
-
+-}
 emptyMisc :: ByteString
 emptyMisc = ""
 
@@ -84,6 +85,7 @@ emptyRefs = []
 defaultTime :: UTCTime
 defaultTime = read "1970-01-01 01:01:01 +0000"
 
+{-
 emptyPaper :: Paper
 emptyPaper = Paper
                "" ""   -- doi and url
@@ -93,4 +95,4 @@ emptyPaper = Paper
                Nothing P.SUndecidable   --- parserInfo, supportLevel
                (ResourceAvailability False False False False False False)
                Nothing defaultTime    -- email, time
-
+-}

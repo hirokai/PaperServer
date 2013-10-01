@@ -1,14 +1,13 @@
 /static StaticR Static getStatic
 /auth   AuthR   Auth   getAuth
--- /auth/login   LoginR  GET OPTIONS
--- /auth/logout  LogoutR   GET
+
+/list PaperListR GET
 
 /favicon.ico FaviconR GET
 /robots.txt RobotsR GET
 
 /listj PaperListWithJsonR GET
 /m/list PaperListMobileR GET
-/list PaperListR GET
 /tablet/list PaperListTabletR GET
 /list.json PaperListJsonR GET POST
 
@@ -28,29 +27,47 @@
 /paper/raw/#PaperId RawHtmlR GET
 /paper/cit/#PaperId PaperCitationR GET
 
-/pubmed/add AddPubmedInfoR POST
+/metainfo/add_pubmed AddPubmedInfoR POST
+/metainfo/add_gs AddGoogleScholarInfoR POST
+
 /pubmed/reload	RefetchPubmedInfo GET
 
+/paper/json/#PaperId	PaperJsonR GET POST
 /paper/refs/#PaperId    PaperRefsR GET POST
 
 /paper/epub/#PaperId EpubPaperR GET
 
 -- Modifying papers
-/paper/delete RemovePapersR POST
-/paper/reparse ReparsePapersR   POST
-/paper/single_reparse    ReparsePaperR   GET
-/paper/add_tags AddTagsR POST
-/paper/replace_tags ReplaceTagsR POST
-/paper/remove_tags RemoveTagsR POST
+/paper/delete/#PaperId RemovePaperR POST
+/paper/delete_multi RemovePapersR POST
+-- /paper/delete RemovePapersR POST
 
-/activity ActivityR GET
-/activity.json ActivityJsonR GET
+/paper/reparse    ReparsePaperR   GET
+/paper/reparse_multi ReparsePapersR   POST
+
+-- Update with parsed doc from client
+/paper/update	UpdatePaperR	POST
+
+/paper/add_tags 				AddTagsR 		POST
+/paper/replace_tags 			ReplaceTagsR 	POST
+/paper/remove_tags 				RemoveTagsR 	POST
+
+/paper/replace_misc				ReplaceMiscR 	POST
+
+/paper/attach_file/#PaperId		AttachFileR		POST
+
+/paper/attachment/#Text			AttachmentR		GET
+
+/activity 						ActivityR   	GET
+/activity.json 					ActivityJsonR 	GET
 
 -- /doi/a/#String/#String DoiPaperR GET
 
 /resource/#String ResourceR GET
 -- /resource ResourceListR GET
-/resource_for/#PaperId ResourceForPaperR GET
+
+/paper/resources/#PaperId ResourcesForPaperR GET
+
 /upload_resource UploadResourceR POST
 
 /citation.ris ExportCitationR POST

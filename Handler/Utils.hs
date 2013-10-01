@@ -13,7 +13,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Digest.Pure.SHA (sha256,showDigest)
 import Data.ByteString.Lazy (fromChunks)
 
-import Model.PaperMongo
+import Model.PaperMongo (getPaperByFilter)
 
 import qualified Database.MongoDB as DB
 import Data.Bson ((!?))

@@ -15,6 +15,7 @@ module Parser.PaperReader (
 import Parser.Import
 import Control.Applicative
 import Control.Lens hiding ((.=))
+import qualified Parser.Lens as L
 
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -57,7 +58,7 @@ readerList = [acsAReader,acsLReader,
               elsevier1Reader,elsevier2Reader,
               scienceReader,stkeReader,
               wileyReaderC,
-              pnasReader,jImmunolReader,
+              pnasReader,pnasLikeReader,
               annualRevReader,
               rupressReader,
               plosReader
@@ -80,11 +81,11 @@ parseHtml url html = do
 -- And I can keep all my adde JS into a .js file.
 sanitizePaper :: Paper -> Paper
 sanitizePaper p =
-    paperCitation %~ sanitizeCit $
-    paperReferences %~ (map sanitizeRef) $
-    paperFigures %~ (map sanitizeFig) $
-    paperAbstract %~ (fmap sanitize) $
-    paperMainHtml %~ (fmap sanitizeMainHtml) $ p
+    L.citation %~ sanitizeCit $
+    L.references %~ (map sanitizeRef) $
+    L.figures %~ (map sanitizeFig) $
+    L.abstract %~ (fmap sanitize) $
+    L.mainHtml %~ (fmap sanitizeMainHtml) $ p
 
 sanitizeMainHtml :: PaperMainText -> PaperMainText
 sanitizeMainHtml (FlatHtml html) = FlatHtml (sanitize html)

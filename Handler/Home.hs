@@ -16,14 +16,14 @@ import Network.Wai
 
 import Text.Blaze.Html (preEscapedToHtml)
 
-
+{-
 optionsAuthR :: Handler RepPlain
 optionsAuthR = do
     -- ToDo: Add other sites.
     setHeader "Access-Control-Allow-Origin" "http://pubs.acs.org"
     setHeader "Access-Control-Allow-Methods" "GET, OPTIONS"
     return $ RepPlain $ toContent ("" :: Text)
-
+-}
 getHomeR :: Handler Html
 getHomeR = do
   mu <- maybeAuthId

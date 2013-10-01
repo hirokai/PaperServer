@@ -16,6 +16,9 @@ import Text.Blaze.Html5.Attributes as A
 import Text.Blaze.Html.Renderer.Text
 import Data.Text.Lazy.Encoding (encodeUtf8)
 
+import Parser.Lens
+import Parser.Utils
+
 -- import Settings
 import Control.Lens
 import Data.Tree

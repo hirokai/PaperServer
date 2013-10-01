@@ -76,13 +76,13 @@ defParsePaper r url html doc = do
     Nothing -> return emptyPaper
     Just l -> do
       let _doi = (doi r) r l c
-      let cit = emptyCitation{_citationDoi = Just _doi,_citationUrl=Just url,
+      let cit = def{_citationDoi = Just _doi,_citationUrl=Just url,
                   _citationTitle=(title r) r l c,_citationJournal=(journal r) r l c,
                   _citationYear=(year r) r l c, _citationVolume=(volume r) r l c,
                   _citationPageFrom=(pageFrom r) r l c,_citationPageTo=(pageTo r) r l c,
                   _citationAuthors=(authors r) r l c,_citationPublisher=(publisher r) r l c,
                   _citationType=(articleType r) r l c}
-      return emptyPaper{_paperDoi=_doi,_paperHtml=html,_paperUrl=url,_paperCitation=cit,
+      return def{_paperDoi=_doi,_paperHtml=html,_paperUrl=url,_paperCitation=cit,
                         _paperAbstract=(abstract r) r l c, _paperMainHtml=(mainHtml r) r l c,
                         _paperReferences=(refs r) r l c,_paperFigures=(figs r) r l c,
                         _paperToc=(toc r) r l c,_paperMisc=(misc r) r l c,_paperParserInfo = Just $ (readerName r) r

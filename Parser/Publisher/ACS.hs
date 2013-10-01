@@ -14,20 +14,26 @@ import Parser.Import
 
 import Text.XML
 import Text.XML.Cursor as C
-import Data.Text.Lazy as TL (toStrict, concat)
+import qualified Data.Text.Lazy as TL (toStrict, concat)
 import Data.List
 
 import Data.Text (Text)
 import qualified Data.Text as T
 
 import Text.Parsec
+import qualified Data.Attoparsec.Text as AP
+import qualified Data.Attoparsec.Combinator as AP
 
 import Parser.Utils
 import Control.Lens
+import qualified Parser.Lens as L
+
 import Data.Tree
 import qualified Data.Map as M
 import Settings
 import Debug.Trace
+
+import Control.Applicative ((<$>))
 
 _acsReader = defaultReader {
   supportedUrl = _supportedUrl,
@@ -155,8 +161,7 @@ acsParsePaper r url html doc = do
   let
     rootCur = fromDocument doc
     sec = getSections rootCur
-    resources = getResources rootCur
-  return $ paper & paperSections .~ sec & paperResources .~ resources
+  return $ paper & L.paperSections .~ sec & L.resources .~ (getResources rootCur)
 
 getResources :: Cursor -> [Resource]
 getResources doc =
@@ -216,7 +221,7 @@ _refs _ c = map mkRef $ Data.List.concat li
       mkRef c = Reference
                   (getId c)
                   (name c)
-                  (Just emptyCitation{_citationDoi=getDoi c})  --Stub
+                  (Just (def & L.doi .~ getDoi c))  --Stub
                   (cit c)
                   (getUrl c)
       name :: Cursor -> T.Text
@@ -224,7 +229,7 @@ _refs _ c = map mkRef $ Data.List.concat li
                   "" -> ""
                   a -> T.drop 3 a -- Ad hoc
       getId c = fromMaybe "" (headm $ c $| attribute "id")
-      cit c = Just $ toStrict $ TL.concat [journal, ", ", vol, ", ", pagef, "-", paget, "(", year, ")"]
+      cit c = Just $ TL.toStrict $ TL.concat [journal, ", ", vol, ", ", pagef, "-", paget, "(", year, ")"]
         where
           innerq s = innerHtml $ c $| query s
           journal = innerq "span.citation_source-journal"
@@ -311,7 +316,7 @@ _mainHtmlA _ c =
                   [("",(node . head . query ".NLM_back") body)]
     return $ Structured (Node ("","") (map mkHtml sections))
 
-replaceLinks = mapAttr [] replaceHref . mapAttr [] replaceImgSrc
+replaceLinks = mapAttr' ["a"] replaceRefLink . mapAttr [] replaceHref . mapAttr [] replaceImgSrc
 
 mkFileNameTxt = T.pack . mkFileName . T.unpack
 
@@ -327,6 +332,23 @@ replaceImgSrc attr =
   in
     M.mapWithKey f attr
 
+replaceRefLink :: Element -> M.Map Name Text
+replaceRefLink (Element name attr cs) =
+  let
+    -- refstr = maybe "parse-fail" parseRefStr $ headMay $ catMaybes $ map f cs
+    refstr = "stub"
+    f c = case c of
+            NodeContent txt -> Just txt
+            _ -> Nothing
+  in
+    if M.lookup "class" attr == Just "ref" then
+      trace' $ M.insert "data-refid" (traceShow refstr refstr) (traceShow attr attr)
+    else
+      trace' $ M.insert "data-refid-fail" (traceShow refstr refstr) (traceShow attr attr)
+      -- attr
+
+trace' a = traceShow a a
+
 replaceHref :: M.Map Name Text -> M.Map Name Text
 replaceHref attr =
   let
@@ -339,11 +361,19 @@ replaceHref attr =
     M.mapWithKey f attr
 
 
-mapAttr :: [Text] -> (M.Map Name Text -> M.Map Name Text) -> Node -> Node
+mapAttr :: [Name] -> (M.Map Name Text -> M.Map Name Text) -> Node -> Node
+mapAttr [] func n@(NodeElement (Element name attr cs))
+   = NodeElement (Element name (func attr) (map (mapAttr [] func) cs))
 mapAttr tags func n@(NodeElement (Element name attr cs))
-   = NodeElement (Element name (func attr) (map (mapAttr tags func) cs))
- -- | otherwise = n
+   = NodeElement (Element name (if name `elem` tags then func attr else attr) (map (mapAttr tags func) cs)) -- | otherwise = n
 mapAttr _ _ n = n
+
+mapAttr' :: [Name] -> (Element -> M.Map Name Text) -> Node -> Node
+mapAttr' [] func n@(NodeElement el@(Element name attr cs))
+   = NodeElement (Element name (func el) (map (mapAttr' [] func) cs))
+mapAttr' tags func n@(NodeElement el@(Element name attr cs))
+   = NodeElement (Element name (if name `elem` tags then func el else attr) (map (mapAttr' tags func) cs)) -- | otherwise = n
+mapAttr' _ _ n = n
 
 -- removeSectionHeader cur = ("",head $ removeTags ["h2"] [node cur])
 
@@ -395,4 +425,27 @@ parsePages input = case parse p "pages" (T.unpack input) of
       anyChar
       to <- optionMaybe $ many1 digit
       return (T.pack fr,fmap T.pack to)
+
+
+parseRefStr :: Text -> Text
+parseRefStr = maybe "" (T.intercalate "") . AP.maybeResult . AP.parse parser_RefStr
+
+
+parser_RefStr :: AP.Parser [Text]
+parser_RefStr = do
+  ts <- AP.sepBy1 (AP.choice [range,single]) (AP.char ',')
+  t <- AP.takeText -- stub
+  return (concat ts)
+
+single :: AP.Parser [Text]
+single = ((:[]) . T.pack . show) <$> AP.decimal
+
+
+range :: AP.Parser [Text]
+range = do
+  a <- AP.decimal :: AP.Parser Int
+  AP.char '-'
+  b <- AP.decimal :: AP.Parser Int
+  return $ map (T.pack . show) [a..b]
+
 

@@ -1,7 +1,5 @@
 <html>
   <head>
-    <script src='jquery-1.9.1.min.js'></script>
-    <script src='options.js'></script>
     <title>PaperServer Preferences</title>
     <style type='text/css'>
       body{
@@ -35,6 +33,16 @@
       <br>
       <button id='button-save'>Save</button>
       <div id='status'></div>
+      <div>
+        <h3>This extension acccesses the following URLs:</h3>
+        <ul id='domain-list'>
+        </ul>
+      </div> 
     </div>
+
+    <script src='jquery-1.9.1.min.js'></script>
+    <script src='underscore-min.js'></script>
+    <script src='options.js'></script>
+
   </body>
 </html>

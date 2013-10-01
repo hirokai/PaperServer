@@ -22,68 +22,80 @@
 				<ul class="nav nav-pills nav-stacked">
 					<li><a id='timeline' class='choose-pane' data-pane='timeline'>Timeline</a></li>	
 					<li><a id='statistics' class='choose-pane' data-pane='stat'>Statistics</a></li>	
-					<li><a id="recent" class='choose-pane' data-pane='recent'>Recent</a></li>
+					<li><a id="recent" class='choose-pane' data-pane='calendar'>Calendar</a></li>
 					<li><a id='trend' class='choose-pane' data-pane='trend'>Trend by subjects</a></li>	
 				</ul>
 			</div>
 			<div class='col-lg-10'>
 				<div id='toppane'>
-					<h4>Filter papers</h4>
 					<div id='filter-time' class='filter-info'>
 						<div class='mylabel'>Time:</div>
-						<div class='btn-group' data-toggle="buttons">
-							<button class="btn btn-small btn-primary" id='alltime'>All time</button>					
-							<button class="btn btn-small btn-primary" id='lastmonth'>Last month</button>					
-							<button class="btn btn-small btn-primary" id='lastweek'>Last week</button>					
-							<button class="btn btn-small btn-primary" id='today'>Today</button>	
-							<button class="btn btn-small btn-primary" id='lasthour'>Last hour</button>					
-							<button class="btn btn-small btn-primary" id='customtime'>Custom</button>					
+						<div class="btn-group" data-toggle="buttons">
+						  <label class="btn btn-small btn-primary active">
+						    <input type="radio" name="options" id="alltime"> All time
+						  </label>
+						  <label class="btn btn-small btn-primary">
+						    <input type="radio" name="options" id="lastmonth"> Last month
+						  </label>
+						  <label class="btn btn-small btn-primary">
+						    <input type="radio" name="options" id="lastweek"> Last week
+						  </label>
+						  <label class="btn btn-small btn-primary">
+						    <input type="radio" name="options" id="today"> Today
+						  </label>
+						  <label class="btn btn-small btn-primary">
+						    <input type="radio" name="options" id="lasthour"> Last hour
+						  </label>
+						  <label class="btn btn-small btn-primary">
+						    <input type="radio" name="options" id="customtime"> Custom
+						  </label>
 						</div>
+
 					</div>
 					<div>
 						<div id='filter-fulltext' class='filter-info'>
-						<div class='mylabel'>Full text:</div>
+						<div class='mylabel'>Search:</div>
 							<input>
 						</div>
-						<div class='clear'></div>
-						<div id='filter-author' class='filter-info'>
-							<div class='mylabel'>
-								Author:
-							</div>
-							<div class='btn-group' data-toggle="buttons-radio">
-								<button class="btn btn-mini active">AND</button>					
-								<button class="btn btn-mini">OR</button>
-							</div>					
-							<div id='author-list'>
-								<i class="icon-black icon-plus-sign"> </i>
-							</div>
-						</div>
-						<div class='clear'></div>
 					</div>
+					<div class='clear'></div>
 				</div>
 				<div class='mainview'>
-					<div id='content-timeline' class='content'>
+					<div id='content-calendar' class='content'>
 						<div id='calendar'></div>
-
 						<div>
 							<table class='table'>
 								<thead>
 									<tr>
 										<td></td>
 										<td>Title</td>
-										<td>Links</td>
+										<td class='links'>Links</td>
 										<td>Citation</td>
 									</tr>
 								</thead>
 								<tbody id="paper-list">
 
-									<script type="text/template" id="timeline-item-template">
+									<script type="text/template" id="calendar-item-template">
 
 										<td class='check'>x</td>
 										<td><%= title %></td>
-										<td>
-											<a href='http://dx.doi.org/<%= doi %>'>Original</a> /	
-											<a href='/paper/b/<%= id %>'>Formatted</a>
+										<td class='links'>
+
+<div class="btn-group">
+  <button type="button" class="btn btn-default" onclick='location.href="/paper/b/<%= id %>";' label='/paper/b/<%= id %>'>Go</button>
+  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+    <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" role="menu">
+    <li><a href='http://dx.doi.org/<%= doi %>'>Original</a></li>
+    <li><a href="/paper/raw/<%= id %>">Raw</a></li>
+    <li><a href="/paper/a/<%= id %>">Format A</a></li>
+    <li><a href="/paper/b/<%= id %>">Format B</a></li>
+    <li><a href="/paper/c/<%= id %>">Format C</a></li>
+    <li class="divider"></li>
+    <li><a href="#">Delete</a></li>
+  </ul>
+</div>
 										</td>
 										<td>
 											<i><%= citation.journal %>,</i>
@@ -113,11 +125,8 @@
 						</div>
 					</div>
 
-					<div id='content-recent' class='span12 content'>
-						<div id="table"  style='float: left'>
-							Recently acquired:
-							<table id='t-journals'></table>
-						</div>
+					<div id='content-timeline' class='span12 content'>
+						<div id='timeline-graph'></div>	
 					</div>
 
 					<div id='content-trend' class='span12 content'>
@@ -130,13 +139,11 @@
 	</div>
 
 	<script type="text/javascript" src='/static/js/lib/jquery.min.js'> </script>
-	<script type="text/javascript" src="/static/js/lib/bootstrap.min.js"></script>
+	<script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
 	<script type="text/javascript" src='/static/js/lib/underscore-min.js'> </script>
 	<script type="text/javascript" src='/static/js/lib/backbone-min.js'> </script>
-	<script src="http://code.highcharts.com/highcharts.js"></script>
-	<script src="http://code.highcharts.com/modules/exporting.js"></script>
-	<script type="text/javascript" src='/static/js/lib/d3.min.js'></script>
 
+	<script type="text/javascript" src='/static/js/lib/d3.min.js'></script>
 
 	<script type="text/javascript" src='/static/js/activity.js'> </script>
 

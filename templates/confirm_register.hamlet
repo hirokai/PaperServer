@@ -7,7 +7,7 @@
   <div #maindiv>
     <p>
       Make an account with an email address: #{email}
-    <p> By clicking OK, you agree the terms below.
+    <p> By clicking OK, you will agree to the terms below.
     <div #buttondiv>
       <button #cancel onclick="location.href='@{AuthR LogoutR}';">
         Cancel

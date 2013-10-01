@@ -134,6 +134,7 @@ epubTemplateFolder :: String
 epubSourceFolder :: String
 htmlFolder :: String
 imageCachePath :: Text -> String
+attachmentFolder :: String
 
 epubTemplateFolder = appRootFolder ++ "temp/epub_template/"
 epubSourceFolder = appRootFolder ++ "temp/epub_source/"
@@ -143,8 +144,9 @@ htmlFolder = appRootFolder ++ "data/paper/"
 cacheFileBaseName :: Text -> Text -> String
 cacheFileBaseName email url = htmlFolder ++ (mkFileName $ T.unpack . T.concat $ [email,"::",url])
 
-
 imageCachePath url = appRootFolder ++ "data/image/" ++ (mkFileName $ T.unpack url)
+
+attachmentFolder = appRootFolder ++ "data/attachment/"
 
 -- |Make a file name from url. This is used everywhere.
 mkFileName :: String -> String

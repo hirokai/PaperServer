@@ -91,7 +91,7 @@ _articleType _ cursor =
 _refs _ cur = map r ns
     where
       ns = map node $ cur $| queryT [jq| ol.references > li |]
-      r n@(NodeElement (Element name as cs)) = Reference (refid as) (refname as)(Just emptyCitation) (Just (txt cs)) (url n)
+      r n@(NodeElement (Element name as cs)) = Reference (refid as) (refname as)(Just def) (Just (txt cs)) (url n)
       refid as = fromMaybe "" (M.lookup "id" as)
       refname as = T.drop 3 (refid as)
       txt cs = T.strip $ TL.toStrict $ innerText $ takeWhile g cs

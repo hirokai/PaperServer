@@ -28,12 +28,15 @@ import qualified Data.Text as T
 import Data.Text.Lazy (toStrict)
 import Data.Text.Read
 
-import Control.Applicative ((<$>),(<*>))
+import Control.Applicative ((<$>),(<*>),(<|>))
 import Control.Monad
 
 import Text.XML.Cursor as C
 
 import Parser.Utils
+
+import qualified Parser.Lens as L
+import Control.Lens
 
 _wileyReader :: PaperReader
 wileyReaderC :: PaperReader
@@ -103,7 +106,10 @@ _year _ c = fmap (read . T.unpack) ((headm . getMeta "citation_publication_date"
 
 _authors _ = getMeta "citation_author"
 
-_abstractC _ = inner . queryT [jq| div#graphicalAbstract |] -- Note: Abstract is not shown in all full text pages.
+-- Note: Abstract is not shown in all full text pages.
+_abstractC _ c = (inner $ queryT [jq| div#graphicalAbstract |] c)
+                <|> (inner $ queryT [jq| #abstract div.para |] c)
+
 _mainHtmlC _ = fmap FlatHtml . inner . map fromNode . removeQueries ["select.jumpSelect", "div.keywords","div.figure","#supp-info","div.bibliography","div#abstract","ol.jumpList"] . map node . queryT [jq| #fulltext |]
 
 _refs _ = map mkRef . queryT [jq| #wol-references > ul > li |]
@@ -125,8 +131,8 @@ mkRef cur = Reference
       cc <- citcur
       maybeText $ toStrict $ innerText [cc]
     num = toStrict . innerText $ queryT [jq| span.bullet |] cur
-    cit = Just $ emptyCitation{_citationAuthors=authors}
-    authors = fromMaybe [] $ fmap (map (toStrict . innerText) . queryT [jq| span.author |]) citcur
+    cit = Just $ def $ L.authors .~ authors_
+    authors_ = fromMaybe [] $ fmap (map (toStrict . innerText) . queryT [jq| span.author |]) citcur
     year = do
         cc <- citcur
         h <- headm $ queryT [jq| span.pubYear |] cc
@@ -143,11 +149,12 @@ _figs _ cur =
         dropName = T.drop (T.length "</span>") . snd . T.breakOn "</span>"
         id_ = eid (node c)
         name = maybeText $ toStrict $ innerHtml $ queryT [jq| div > p > span.label |] c
-        caption = do
-          p <- headMay $ queryT [jq| div.caption > p |] c
-          ts <- (tailMay . child) p
-          txt <- (render . map node) ts 
-          return $ dropName txt
+        --caption = do
+        --  p <- headMay $ queryT [jq| div.caption > p |] c
+        --  ts <- (tailMay . child) p
+        --  txt <- (render . map node) ts 
+        --  return $ dropName txt
+        caption = fmap dropName $ inner $ queryT [jq| div.caption > p |] c
         img = do
           a <- headMay $ queryT [jq| a.figZoom |] c
           headMay $ attribute "href" a

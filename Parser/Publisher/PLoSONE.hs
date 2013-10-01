@@ -31,6 +31,8 @@ import qualified Data.Text as T
 import Data.Text.Lazy (toStrict)
 import Control.Applicative
 import Control.Lens
+import qualified Parser.Lens as L
+
 import Parser.Utils
 
 _plosReader = defaultReader {
@@ -83,10 +85,8 @@ _supportedUrl _ url = boolToSupp $ any (`T.isPrefixOf` url) js
 
 plosParsePaper r url html doc = do
   paper <- defParsePaper r url html doc   -- This uses _acsReader (see the definition of defParsePaper)
-  let
-    rootCur = fromDocument doc
-    resources = getResources url rootCur
-  return $ paper & paperResources .~ resources
+  let rootCur = fromDocument doc
+  return $ paper & L.resources .~ (getResources url rootCur)
 
 hostDomain url = (`T.append` ".org") $ fst $ T.breakOn ".org" url
 hostDomain' = "http://www.plosone.org"  -- Stub: Is this fixed domain okay?
@@ -170,23 +170,20 @@ parseCit (meta,cittext) = (toRef . M.fromList . catMaybes . map (toTuple . T.spl
     toRef m = traceShow f f
       where
         f = Reference <$> num <*> num <*> Just cit <*> Just (ctxt <|> (cit >>= mkcit)) <*> Just Nothing
-        (ctxt,mdoi) = parseCitText title cittext
+        (ctxt,mdoi) = parseCitText title_ cittext
         pages = fmap (T.splitOn "-") $ M.lookup "citation_pages" m :: Maybe [Text]
         num = M.lookup "citation_number" m
-        title = M.lookup "citation_title" m
-        mkcit c = do
-          j <- c^.citationJournal
-          v <- c^.citationVolume
-          pf <- c^.citationPageFrom
-          return $ T.concat [j, ", ", v,   ", ", pf]
-        cit = Just $ emptyCitation{
-                _citationTitle=title,
-                _citationJournal=M.lookup "citation_journal_title" m,
-                _citationVolume=M.lookup "citation_volume" m,
-                _citationPageFrom = pages >>= flip atMay 0,
-                _citationPageTo = pages >>= flip atMay 1,
-                _citationDoi = mdoi
-              }
+        title_ = M.lookup "citation_title" m
+        mkcit c = case (c^.L.journal,c^.L.volume,c^.L.pageFrom) of
+                    (Just j,Just v, Just pf) -> Just $ T.concat [j, ", ", v,   ", ", pf]
+                    _ -> Nothing
+        cit = Just $ def
+                & L.title .~ title_
+                & L.journal .~ M.lookup "citation_journal_title" m
+                & L.volume .~ M.lookup "citation_volume" m
+                & L.pageFrom .~ (pages >>= flip atMay 0)
+                & L.pageTo .~ (pages >>= flip atMay 1)
+                & L.doi .~ mdoi
 
 parseCitText :: Maybe Text -> Text -> (Maybe Text,Maybe Text)
 parseCitText mtitle txt =

@@ -56,9 +56,9 @@
           <div #btn-signup>
             Sign up
       <div #auth-explain>
-        Authentication will be done by Mozilla Persona (recommended) or Google ID.
+        Authentication will be done by Mozilla Persona.
       <div .detail>
-        We only use your email address for the purpose of checking your identity. We never have aceess to your password. How is Mozilla Persona a better way? Read these (
+        This only requires your email address. This is better than Google or Facebook login. Read these (
         <a href="http://techcrunch.com/2012/09/27/mozillas-persona-login-system-is-now-in-beta-takes-on-openid-and-oauth/">
           English,
         <a href="http://japanese.engadget.com/2012/09/27/mozilla-persona/">

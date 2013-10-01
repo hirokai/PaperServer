@@ -29,6 +29,7 @@ import Model.PaperReader
 import Model.PaperP (renderStructured)
 import Parser.Paper as P hiding (Paper,Url)
 import qualified Parser.Paper as P
+import qualified Parser.Lens as L
 
 import Data.FileEmbed
 
@@ -51,7 +52,7 @@ epubFromPaper pid paper = do
   liftIO $ BS.writeFile (dir ++ "/META-INF/container.xml") containerStr
   liftIO $ mkOpf pid paper dir
   mkPaper pid paper dir
-  figPaths <- liftIO $ mapM (\f -> mkFig f dir) (paper^.P.paperFigures)
+  figPaths <- liftIO $ mapM (\f -> mkFig f dir) (paper^.L.figures)
   liftIO $ mkNav pid paper dir figPaths
   liftIO $ BS.writeFile (dir++"/mimetype") "application/epub+zip"
   liftIO $ system $ "zip -0 -X "++"../"++strpid++".epub ./mimetype"
@@ -81,17 +82,17 @@ mkNav pid paper dir figPaths = do
 mkPaper :: PaperId -> PaperP -> FilePath -> Handler ()
 mkPaper pid pp dir = do
   let
-    mabstract = pp^.P.paperAbstract
-    mainHtml = maybe "" renderStructured $ pp^.P.paperMainHtml
-  let cit = pp^.P.paperCitation
+    mabstract = pp^.L.abstract
+    mainHtml = maybe "" renderStructured $ pp^.L.mainHtml
+  let cit = pp^.L.citation
   let html = do
                 H.head $ do
-                  H.title $ toHtml $ fromMaybe "(No title)" (pp^.P.paperCitation^.P.citationTitle)
+                  H.title $ toHtml $ fromMaybe "(No title)" (cit^.L.title)
                   H.style ! A.type_ "text/css" $ preEscapedToHtml cssText
                 H.body $ do
                   H.div ! A.id "titlediv" $ do
-                    maybe emptyh (\t -> H.span $ H.toHtml t) $ cit^.citationType
-                    h1 $ preEscapedToHtml $ fromMaybe "(No title)" $ cit^.citationTitle
+                    maybe emptyh (\t -> H.span $ H.toHtml t) $ cit^.L.ptype
+                    h1 $ preEscapedToHtml $ fromMaybe "(No title)" $ cit^.L.title
                     citationHtml cit
                   case mabstract of
                     Just abs -> do
@@ -116,27 +117,27 @@ toHtml' = H.toHtml
 citationHtml :: P.Citation -> Html
 citationHtml cit = do
   H.p ! A.id "citation" $ do
-    H.toHtml $ T.intercalate ", " (cit^.citationAuthors)
+    H.toHtml $ T.intercalate ", " (cit^.L.authors)
     br
-    H.i $ H.toHtml $ fromMaybe "" $ cit^.citationJournal
+    H.i $ H.toHtml $ fromMaybe "" $ cit^.L.journal
     toHtml' ", "
-    H.b $ H.toHtml $ fromMaybe "" $ cit^.citationVolume
+    H.b $ H.toHtml $ fromMaybe "" $ cit^.L.volume
     toHtml' ", "
-    H.toHtml $ fromMaybe "" $ cit^.citationPageFrom
+    H.toHtml $ fromMaybe "" $ cit^.L.pageFrom
     preEscapedToHtml' "&dash;"
-    H.toHtml $ fromMaybe "" $ cit^.citationPageTo
-    case cit^.citationYear of
-      Just year -> do
+    H.toHtml $ fromMaybe "" $ cit^.L.pageTo
+    case cit^.L.year of
+      Just y -> do
         preEscapedToHtml' "&nbsp;"
-        H.toHtml $ "(" ++ show year ++ ")"
+        H.toHtml $ "(" ++ show y ++ ")"
       Nothing -> emptyh
 
 mkFig :: P.Figure -> FilePath -> IO (String,String)
 mkFig fig dir = do
   let
-    num = T.unpack $ fig^.P.figId
-    name = T.unpack $ fig^.P.figName
-    url = fig^.figImg
+    num = T.unpack $ fig^.L.figId
+    name = T.unpack $ fig^.L.figName
+    url = fig^.L.figImg
     figfile = "fig_"++num++".png" -- ++ imgExt (getImgType url)  Stub: currently all images are png.
     imgPath = resourceRootFolder ++ mkFileName (T.unpack url)
     html = do
@@ -147,7 +148,7 @@ mkFig fig dir = do
                  H.div $ do
                    H.div $ do
                      H.img ! src (fromString figfile)
-                   H.div $ preEscapedToHtml (fig^.figAnnot)
+                   H.div $ preEscapedToHtml (fig^.L.figAnnot)
     bs = "<?xml version='1.0' encoding='UTF-8'?><html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>"
             `BL.append` renderHtml html
     htmlfile = "fig_"++num++".html"
@@ -159,17 +160,18 @@ mkFig fig dir = do
 mkOpf :: PaperId -> PaperP -> FilePath -> IO ()
 mkOpf pid paper dir = do
   let
-    cit = paper^.paperCitation
-    title = encodeUtf8 $ fromMaybe "(No title)" $ cit^.citationTitle
-    authors = cit^.citationAuthors
-    pub = encodeUtf8 $ fromMaybe "N/A" $ cit^.citationPublisher
+    cit = paper^.L.citation
+    title = encodeUtf8 $ fromMaybe "(No title)" $ cit^.L.title
+    authors = cit^.L.authors
+    pub = encodeUtf8 $ fromMaybe "N/A" $ cit^.L.publisher
   ts <- fmap show getCurrentTime
   let
     time = fromString $ take 19 ts
     authors_str = BS.concat $ Import.map (\s -> encodeUtf8 $ T.concat ["<dc:creator>",s,"</dc:creator>"]) authors
-    fignums = Import.map (T.unpack . _figId) $ paper^.paperFigures
+    figs = paper^.L.figures
+    fignums = Import.map (T.unpack . _figId) figs
     fightmls = BS.concat $ Import.map figitem fignums
-    figtypes = Import.map (getImgType . _figImg) $ paper^.paperFigures
+    figtypes = Import.map (getImgType . _figImg) figs
     figimgs = BS.concat $ Import.map figimg $ zip fignums figtypes
     figrefs = fromString $ Import.concatMap (\n -> "<itemref idref='fightml_"++n++"'/>") fignums
     bs = BS.concat ["<?xml version='1.0' encoding='UTF-8'?>",

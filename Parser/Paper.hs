@@ -22,8 +22,13 @@ import Data.Aeson.TH
 import Text.XML.Selector (maybeText)
 
 import Data.Typeable
+import Data.Default
 
 type Url = Text
+
+
+-- Don't change field names of data types.
+-- deriveJSON and makeLenses rely on current names.
 
 data Reference = Reference {
     _referenceRefId :: Text,
@@ -95,18 +100,21 @@ data Resource = Resource {
 type SectionTag = Text -- section title
 data PaperMainText = Structured (Tree (SectionTag,Text)) | FlatHtml Text deriving Show
 
+instance Default Paper where
+  def = Paper "" "" "" Nothing Nothing (def::Citation) [] [] [] Nothing [] Nothing "" Nothing Nothing SUndecidable
 
 emptyPaper :: Paper
-emptyPaper = 
-  Paper "" "" "" Nothing Nothing emptyCitation [] [] [] Nothing [] Nothing "" Nothing Nothing SUndecidable
+emptyPaper = def
+
+instance Default Citation where
+  def = Citation Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing [] Nothing Nothing
 
 emptyCitation :: Citation
-emptyCitation =
-  Citation Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing [] Nothing Nothing
+emptyCitation = def
 
 emptyWithUrl :: Text -> Paper
-emptyWithUrl url = emptyPaper{
-  _paperCitation=emptyCitation{_citationUrl=Just url}
+emptyWithUrl url = (def :: Paper){
+  _paperCitation=(def :: Citation){_citationUrl=Just url}
   , _paperUrl = url
   }
 
@@ -123,76 +131,6 @@ showMainText (FlatHtml txt) = txt
 showMainText (Structured (Node _ cs)) = T.concat (map f cs)  -- stub: now only one-depth
   where
     f (Node (secname,html) _) = T.concat ["<h2 class='section-title'>",secname,"</h2>",html]
-
-makeLenses ''Paper
-makeLenses ''Citation
-makeLenses ''Reference
-makeLenses ''Resource
-makeLenses ''Section
-makeLenses ''Figure
-
-
--- 
--- JSON in/out
---
-
-{-
-instance FromJSON PaperMainText where
-  parseJSON (Object v)
-    = (FlatHtml <$> v .: "html") <|> (Structured <$> (Node ("","") <$> v .: "structured"))
-  parseJSON _ = pure $ FlatHtml (T.pack "")  -- should not happen.
-
-instance ToJSON PaperMainText where
-  toJSON (FlatHtml html) = object ["html" .= html]
-  toJSON (Structured node@(Node (rtag,rtxt) forest))
-    = object ["structured" .= toJSON node]
--}
-
-
-$(deriveJSON id ''PaperMainText)
-$(deriveJSON id ''Figure)
-$(deriveJSON (\s -> (toLower (s !! 9)):(drop 10 s)) ''Citation)
-$(deriveJSON (\s -> (toLower (s !! 9)):(drop 10 s)) ''Resource)
-$(deriveJSON (\s -> (toLower (s !! 9)):(drop 10 s)) ''Reference)
-$(deriveJSON (\s -> (toLower (s !! 4)):(drop 5 s)) ''Section)
-$(deriveJSON id ''Tree)
-$(deriveJSON (\s -> (toLower (s !! 4)):(drop 5 s)) ''SectionInfo)
-$(deriveJSON (\s -> (toLower (s !! 6)):(drop 7 s)) ''Paper)
-$(deriveJSON (\s -> (map toLower (drop 1 s))) ''SupportLevel)
-
-
-
-samePaper :: Citation -> Citation -> Bool
-samePaper c1 c2 = (c1^.citationDoi) == (c2^.citationDoi) || (c1^.citationUrl) == (c2^.citationUrl)
-
---ToDo: Complete this.
-mkCitText :: Reference -> Text
-mkCitText ref
-  = case _referenceCit ref of
-      Just c -> (fromMaybe "" $ c^.citationJournal) `T.append` (maybe "" (", " `T.append`) $
-                  fmap (T.pack . show) $ c^.citationYear)
-      Nothing -> ""
-
-{-
-type PaperId = String
-
-paperSummary2 :: PaperId -> Paper -> Value
-paperSummary2 pid p
-  = object ["id" .= pid, "doi" .= _paperDoi p, "url" .= _paperUrl p, "title" .= (( _citationTitle c) :: Maybe T.Text),
-            "tags" .= (p^.paperTags), "note" .= _paperNote p, "citation" .= toJSON c]
-  where
-    c = _paperCitation p
-
-
--- not used for now.
-mkFlat :: PaperMainText -> Text
-mkFlat (FlatHtml html) = html
-mkFlat (Structured n) = mkFlat' n
-
-mkFlat' (Node (tag,txt) forest) = T.append txt (T.concat (map mkFlat' forest))
-
--}
-
 
 --
 -- ReferenceManager export
@@ -223,12 +161,4 @@ paperRIS p = T.intercalate "\n" $ catMaybes [
     ep = fmap ("EP - " `T.append`) (_citationPageTo c)
     url = fmap ("UR - " `T.append`) (_citationUrl c)
     py = fmap ("PY - " `T.append`) (fmap (T.pack . show) $ _citationYear c)
-
-
---
--- QuickCheck
---
-
-prop_jsonCitation :: Citation -> Bool
-prop_jsonCitation cit = (fromJSON . toJSON) cit == Success cit
 

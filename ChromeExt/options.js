@@ -37,3 +37,13 @@ $(function(){
 
 });
 
+
+$(function(){
+  var manifest = chrome.runtime.getManifest();
+  var el = $('#domain-list');
+  _.each(manifest.permissions,function(site){
+    el.append('<ul>'+site+'</ul>');
+  });
+console.log(manifest.version);
+
+});

@@ -21,6 +21,7 @@ import Model.PaperP (renderStructured)
 -- From paperserver-parser package
 import qualified Parser.Paper as P
 import Parser.PaperReader (parseHtml)
+import qualified Parser.Lens as L
 
 import Control.Exception (try,IOException)
 
@@ -71,7 +72,7 @@ getHtmlFromFileUrl func url = do
 
 paperHtml :: PaperP -> IO Text
 paperHtml p = return $ fromMaybe "" $ do
-  mh <- p^.P.paperMainHtml
+  mh <- p^.L.paperMainHtml
   return $ TL.toStrict $ renderHtml $ renderStructured mh
 
 data PaperResourceType = RCit | RFull | RAbs | RFig | RRef | ROriginal

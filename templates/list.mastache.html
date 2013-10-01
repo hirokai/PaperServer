@@ -4,40 +4,177 @@
 	<meta charset='utf-8'>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
    	<title>List of papers</title>
-	<link href="/static/css/lib/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
 	<link rel="stylesheet" type="text/css" href="/static/css/paperlist.css">
-	<link rel="stylesheet" type="text/css" href="http://ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.4/css/jquery.dataTables.css">
+	<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/datatables/1.9.4/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1/themes/flick/jquery-ui.css">
+  <link href="/static/css/lib/jquery.tagit.css" rel="stylesheet" type="text/css">
 
 </head>
 <body>
 
-<div class="navbar">
-  <a class="navbar-brand" href="#">PaperServer</a>
+<nav class="navbar navbar-default" role="navigation">
+  <a class="navbar-brand" href="/welcome">PaperServer</a>
   <ul class="nav navbar-nav">
     <li><a href="#">Reader</a></li>
     <li class="active"><a href="#">List</a></li>
     <li><a href="/activity">Stats</a></li>
   </ul>
-</div>
+</nav>
 
 <div class='container'>
 <div class="row">
 <div class="col-lg-12 col-12">
 <table id="list"></table>
-	
+</div>	
 </div>	
 </div>
 </div>
+<div id='statusbar'></div>
 
-	<script type="text/javascript" src='/static/js/lib/jquery.min.js'> </script>
-	<script type="text/javascript" src="/static/js/lib/bootstrap.min.js"></script>
+<div class="modal fade" id="action-confirm" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title"></h4>
+      </div>
+      <div class="modal-body">
+        <p class='message'></p>
 
-	<script type="text/javascript" src='/static/js/lib/underscore-min.js'> </script>
-	<script type="text/javascript" src='/static/js/lib/backbone-min.js'> </script>
+        <div class='title-placeholder'></div>
+        
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button type="button" id='action-ok' class="btn btn-primary" data-dismiss="modal">OK</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
 
-	<script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.4/jquery.dataTables.min.js"></script>
+<div class="modal" id="info-window" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title">Paper info</h4>
+      </div>
+      <div class="modal-body">
+        
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button type="button" id='info-ok' class="btn btn-primary" data-dismiss="modal">OK</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
 
-	<script type="text/javascript" src='/static/js/paperlist.js'> </script>
+<script type="text/template" id="info-template">
+<table id='info-table'>
+<thead>
+<th>
+<td class='key'></td>
+<td class='value'></td>
+</th>
+</thead>
+<tbody>
+<tr>
+  <td class='key'>ID</td>
+  <td class='value'><%= id %></td>
+</tr>
+<tr>
+  <td class='key'>Title</td>
+  <td class='value'><%= citation.title %></td>
+</tr>
+<tr>
+  <td class='key'>Authors</td>
+  <td class='value'><%= citation.authors.join('; ') %></td>
+</tr>
+<tr>
+  <td class='key'>Tags</td>
+  <td class='value'>
+    <%= (citation.tags || []).join('; ') %>
+    <div id='tags-container'>
+    <ul class='tags'>
+    </ul>
+<div class='clear'></div>
+</div>
+    </td>
+</tr>
+<tr>
+  <td class='key'>Comment</td>
+  <td class='value'>
+    <textarea id='input-comment' cols='40' rows='4' value='<%= misc.comment %>'></textarea>
+  </td>
+</tr>
+</tbody>
+</table>
+</script>
+
+<script type="text/template" id="view-item-template">
+<div class="btn-group">
+  <a class="btn btn-primary btn-sm" href='/paper/c/<%= id %>'>Go</a>
+  <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown">
+    <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu menu-sm" role="menu">
+    <li><a href="/paper/a/<%= id %>">Format A</a></li>
+    <li><a href="/paper/b/<%= id %>">Format B</a></li>
+    <li><a href="/paper/c/<%= id %>">Format C</a></li>
+    <li class="divider"></li>
+    <li><a href="<%=citation.url%>">Original</a></li>
+  </ul>
+</div>
+</script>
+
+<script type="text/template" id="tools-template">
+<div class="btn-group" id='tools-button'>
+  <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown">
+     <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" role="menu">
+    <li><a class='edit-tag-multi'>Tags</a></li>
+    <li class="divider"></li>
+    <li><a href="#" class='delete-multi'>Delete</a></li>
+  </ul>
+</div>
+</script>
+
+<script type="text/template" id="action-template">
+<div class="btn-group" data-id="<%= id %>">
+  <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown">
+    Action <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" role="menu">
+    <li><a href="#" class='show-info'>Show Info</a></li>
+    <li class="divider"></li>
+    <li><a class='edit-tag'>Tags</a></li>
+    <li><a class='edit-comment'>Comment</a></li>
+    <li class="divider"></li>
+    <li><a class='link-pdf'>Link to PDF in Dropbox</a></li>
+    <li><a class='upload-pdf'>Upload PDF</a></li>
+    <li class="divider"></li>
+    <li><a href="#" class='remove-entry'>Delete</a></li>
+  </ul>
+</div>
+
+</script>
+
+  <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/datatables/1.9.4/jquery.dataTables.min.js"></script>
+
+	<script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+	<script src='//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.1/underscore-min.js'> </script>
+	<script src='//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js'> </script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js" type="text/javascript" charset="utf-8"></script>
+
+  <script async='true' src="/static/js/lib/tag-it.min.js" type="text/javascript" charset="utf-8"></script>
+
+  <script type="text/javascript" src="https://www.dropbox.com/static/api/1/dropins.js" id="dropboxjs" data-app-key="cc4r9xh1o4ioyku"></script>
+
+	<script src='/static/js/paperlist.js'> </script>
 
 </body>
 </html>

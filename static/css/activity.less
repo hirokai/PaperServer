@@ -18,11 +18,14 @@ body {
 }
 
 #toppane {
-	padding: 5px 20px 15px 20px;
-	background-color: #f3f3ff;
+	padding: 10px 20px 15px 20px;
+	height: 60px;
 	h4 {
 		color: #555;
 	}
+	> div {
+		float: left;
+		}
 }
 
 .mainview {
@@ -47,6 +50,19 @@ body {
 
 .rotate{
 	transform:rotate(90deg);
+}
+
+.bars{
+	cursor: pointer;
+	&:hover{
+		fill: #ff4444;
+		transition: 0.2s;
+	}
+		transition: 0.2s;
+}
+
+td.links {
+	width: 150px;	
 }
 
 .filter-info {

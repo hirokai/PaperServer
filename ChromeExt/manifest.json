@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "PaperServer",
-  "version": "0.3",
+  "version": "0.4",
   "description": "Manage and organize journal articles.",
   "icons": { "128": "icon_128.png", "48": "icon_48.png" },
   "background": {
@@ -12,6 +12,7 @@
   "content_scripts": [
     {
       "matches": [
+         "http://nar.oxfordjournals.org/content/*",
          "http://localhost/*",
          "http://pubs.acs.org/doi/*",
          "http://www.annualreviews.org/doi/*",
@@ -36,18 +37,25 @@
          , "https://www.thieme-connect.com/ejournals/*"
          , "http://www.jbc.org/*"
          , "http://*.royalsocietypublishing.org/*"
-         , "http://ieeexplore.ieee.org/*"
+        , "http://ieeexplore.ieee.org/xpl/articleDetails.jsp?*"
          , "http://elife.elifesciences.org/content/*"
          , "http://pubs.rsc.org/en/content/*"
+         , "http://bloodjournal.hematologylibrary.org/*"
+         , "http://www.jleukbio.org/content/*"
+         , "http://cshperspectives.cshlp.org/content/*"
+         , "http://apl.aip.org/resource/*"
+         , "http://*.asm.org/*"
        ],
 			 "run_at": "document_start",
       "js": ["jquery-1.9.1.min.js", "underscore-min.js","content_script.js"]
     }
   ],
   "permissions": [
-    "tabs",
-    "http://*/*",
-    "notifications",
+ //   "tabs",
+ //   "http://*/*",
+ //   "notifications",
+ 	"http://ac.els-cdn.com/*",
+    "http://nar.oxfordjournals.org/content/*",
     "http://www.ncbi.nlm.nih.gov/",
     "http://paperserver.jp/*",
     "http://localhost/*",
@@ -72,11 +80,17 @@
          , "http://www.biomedcentral.com/*"
          , "http://*.aps.org/*"
          , "https://www.thieme-connect.com/ejournals/*"
-                  , "http://www.jbc.org/*"
+        , "http://www.jbc.org/*"
         , "http://*.royalsocietypublishing.org/*"
         , "http://ieeexplore.ieee.org/*"
         , "http://elife.elifesciences.org/content/*"
          , "http://pubs.rsc.org/en/content/*"
+         , "http://bloodjournal.hematologylibrary.org/*"
+         , "http://www.jleukbio.org/content/*"
+         , "http://cshperspectives.cshlp.org/content/*"
+         , "http://apl.aip.org/resource/*"
+         , "http://scholar.google.co.jp/*"
+         , "http://*.asm.org/*"
          ],
  "page_action": {
    "default_icon": "default.png",

@@ -1,5 +1,5 @@
 name:              PaperServer
-version:           0.10.1
+version:           0.11
 license:           GPL
 cabal-version:     >= 1.8
 build-type:        Simple
@@ -37,11 +37,15 @@ library
                      Model.PaperReaderTypes
                      Model.PaperMongo
                      Model.PaperP
+                     Model.Pubmed
+                     Model.RIS
                      Parser.Import
                      Parser.Paper
                      Parser.Formatter
                      Parser.PaperReader
                      Parser.PaperReaderTypes
+                     Parser.JSON
+                     Parser.Lens
                      Parser.Settings
                      Parser.Utils
                      Parser.Publisher.ACS
@@ -79,7 +83,7 @@ library
                  , yesod-auth                    >= 1.2        && < 1.3
                  , yesod-static                  >= 1.2        && < 1.3
                  , yesod-form                    >= 1.3        && < 1.4
-                 , bytestring                    >= 0.10.0.1   && < 0.11
+                 , bytestring                    >= 0.9        && < 0.11
                  , text                          >= 0.11       && < 0.12
                  , persistent                    >= 1.2        && < 1.3
                  , persistent-mongoDB            >= 1.2        && < 1.3

@@ -4,8 +4,10 @@
 
 module Handler.Resource (
        getResourceR
-       , getResourceForPaperR
+       , getResourcesForPaperR
        , postUploadResourceR
+       , postAttachFileR
+       , getAttachmentR
   )
 where
 
@@ -17,28 +19,38 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64 as B64
 import Data.Text.Encoding
 
+import qualified Data.HashMap.Strict as HashMap
+import qualified Data.Aeson as Ae
+
+import Handler.Utils (requireAuthId')
+import Model.PaperMongo (getPaperDB,getPaperMisc,updatePaperMisc)
 
 -- Returns the resource list for the specified paper.
 -- Client will download the image files (if not yet) and send them to server.
-getResourceForPaperR :: PaperId -> Handler TypedContent
-getResourceForPaperR pid = do
-  paper <- runDB $ get404 pid
-  let title = citationTitle $ paperCitation paper
-  obj <- if title == Nothing then
-              return $ object ["success" .= False, "message" .= ("Parsing not yet done." :: String)]
-            else do
-              let urls = (map figureImg . paperFigures) paper ++
-                                     ((map resourceUrl . paperResources) paper)
-              new_urls <- liftIO $ filterM (fmap not . resourceExists) urls
-              $(logInfo) $ T.pack $ show $ Data.List.length new_urls
-              return $ object ["success" .= True, "url" .= new_urls]
-  return $ toTypedContent $ toJSON obj
+getResourcesForPaperR :: PaperId -> Handler TypedContent
+getResourcesForPaperR pid = do
+  email <- requireAuthId'
+  mp <- getPaperDB email pid
+  case mp of
+    Just paper -> do
+      let title = citationTitle $ paperCitation paper
+      let urls = (map figureImg . paperFigures) paper ++
+                             ((map resourceUrl . paperResources) paper)
+      ids <- mapM (liftIO . resourceId) urls
+      let resources = zipWith (\mi u -> object (["exists" .= isJust mi, "url" .= u] ++ maybe [] (\i -> ["id" .= i]) mi)) ids urls
+      return $ toTypedContent $ object ["success" .= True, "resources" .= resources]
+    Nothing -> do
+      return $ toTypedContent $ object ["success" .= False, "message" .= ("ID not found."::Text)]      
 
-resourceExists :: Url -> IO Bool
-resourceExists url = doesFileExist (resourceRootFolder ++ mkFileName (T.unpack url))
+resourceId :: Url -> IO (Maybe Text)
+resourceId url = do
+  let rid = mkFileName (T.unpack url)
+  ex <- doesFileExist (resourceRootFolder ++ rid)
+  return $ if ex then Just (T.pack rid) else Nothing
 
 getResourceR :: String -> Handler () 
 getResourceR hash = do
+  email <- requireAuthId'
   -- liftIO $ putStrLn hash
   sendFile ctype (resourceRootFolder++hash)
     where
@@ -55,6 +67,7 @@ getResourceR hash = do
 -- probably by separating users.
 postUploadResourceR :: Handler TypedContent
 postUploadResourceR = do
+  email <- requireAuthId'
   mtpid <- lookupPostParam "id"
   let mpid = case mtpid of
                Nothing -> Nothing
@@ -71,6 +84,7 @@ postUploadResourceR = do
 
 saveUploadedImg :: PaperId -> Text -> Text -> Text -> Handler Value
 saveUploadedImg pid ftype url dat = do
+  email <- requireAuthId'
   let
     file = imageCachePath url
     dec = B64.decode (encodeUtf8 dat)
@@ -84,4 +98,43 @@ saveUploadedImg pid ftype url dat = do
       rid <- runDB $ insert img
       return $ object ["success" .= True, "resource_id" .= rid]   -- "resource_id" is a DB id, not a resId field.
  
+
+postAttachFileR :: PaperId -> Handler TypedContent
+postAttachFileR pid = do
+  email <- requireAuthId'
+  mdat <- lookupPostParam "data"
+  json <- case mdat of
+    Just dat -> do
+      let bin = encodeUtf8 (T.drop 7 $ snd $ T.breakOn "base64," dat)
+      case B64.decode bin of -- Stub: Ad hoc: Drops "data:*****;base64," 
+        Right d -> doAttachFile email pid d
+        Left err -> return $ object ["success" .= False, "message" .= ("Base64 decode failed: " ++ err)]
+    Nothing -> return $ object ["success" .= False, "message" .= ("No data found." :: Text)]
+  return $ toTypedContent json
+
+getAttachmentR :: Text -> Handler TypedContent
+getAttachmentR resId = do
+  email <- requireAuthId'
+  sendFile "application/pdf" (attachmentFolder ++ (T.unpack $ resId))
+  -- Stub: Assuming PDF.
+
+doAttachFile :: Text -> PaperId -> ByteString -> Handler Value
+doAttachFile email pid dat = do
+  mval <- getPaperMisc email pid
+  datid <- return (toPathPiece pid)  -- Stub
+  saveAttachment pid datid dat
+  let key = "attachedFile"
+  let newobj = case mval of
+                 (Just (Ae.Object obj)) -> HashMap.insert key (Ae.String datid) obj
+                 _ -> HashMap.singleton key (Ae.String datid) :: HashMap.HashMap Text Value
+  success <- updatePaperMisc email pid (Ae.Object newobj)
+  return $ case success of 
+    True -> object ["success" .= True]
+    False -> object ["success" .= False, "message" .= ("Database error"::Text)]
+
+saveAttachment :: PaperId -> Text -> ByteString -> Handler Bool
+saveAttachment pid datid dat = do
+  liftIO $ B.writeFile (attachmentFolder ++ (T.unpack $ toPathPiece pid)) dat -- stub
+  return True
+
 
