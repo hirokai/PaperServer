@@ -18,8 +18,8 @@ module Parser.Publisher.Elsevier (
     elsevier1Reader,elsevier2Reader
 ) where
 
--- elsevier1Reader : Immunity: http://dx.doi.org/10.1016/j.immuni.2006.04.010
---                   Archives of Biochemistry and Biophysics:  http://dx.doi.org/10.1016/j.abb.2011.05.014
+-- elsevier1Reader : Immunity: https://doi.org/10.1016/j.immuni.2006.04.010
+--                   Archives of Biochemistry and Biophysics:  https://doi.org/10.1016/j.abb.2011.05.014
 -- elsevier2Reader : Not supported yet.
 --
 

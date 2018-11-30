@@ -62,7 +62,7 @@ decodeToc :: Paper -> [Text]
 decodeToc = const [] -- maybe [] (T.splitOn "\t") . paperToc
 
 doi2url :: Text -> String
-doi2url doi = "http://dx.doi.org/" ++ T.unpack doi
+doi2url doi = "https://doi.org/" ++ T.unpack doi
 
 
 -- assumes cr is not used for id.

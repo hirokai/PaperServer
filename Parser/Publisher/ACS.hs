@@ -241,7 +241,7 @@ _refs _ c = map mkRef $ Data.List.concat li
                     Just u -> Just $ predoi `T.append` u
                     Nothing -> Just $ (pre `T.append`) $ fromJust $ cit c
       pre = "http://alocator.web.fc2.com/?redirect=yes&q="
-      predoi = "http://dx.doi.org/"
+      predoi = "https://doi.org/"
       a :: Cursor -> Maybe Cursor
       a = headm . queryT [jq| div.citationLinks a |]
       getDoi :: Cursor -> Maybe T.Text

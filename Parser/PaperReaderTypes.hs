@@ -126,7 +126,7 @@ absolutePath url path
 
 
 doi2url :: String -> String
-doi2url doi = "http://dx.doi.org/" ++ doi
+doi2url doi = "https://doi.org/" ++ doi
 
 
 emptyMisc :: B.ByteString

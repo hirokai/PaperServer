@@ -67,7 +67,7 @@
         $forall ref <- refs
           <li>
             $maybe doi <- (referenceCit ref >>= citationDoi)
-              <a href=#{T.append "http://dx.doi.org/" doi}>
+              <a href=#{T.append "https://doi.org/" doi}>
                 #{referenceRefName ref} : #{fromMaybe "" $ referenceCitText ref}
             $nothing
               #{referenceRefName ref} : #{fromMaybe "" $ referenceCitText ref}
